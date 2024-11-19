@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Configuration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #refreshButton {
+            background-color: #28a745; /* Green */
+        }
+        #refreshButton:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <form action="/submit" method="POST">
+        <h2>Connect to WiFi</h2>
+        <label for="ssid">WiFi SSID:</label>
+        <select id="ssid" name="ssid" required>
+            <option value="">Select WiFi Network</option>
+        </select>
+        <button type="button" id="refreshButton" onclick="loadSSIDs()">Refresh SSIDs</button>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+
+        <button type="submit">Connect</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSSIDs(); // Load SSIDs when the document is ready
+        });
+
+        function loadSSIDs() {
+            fetch('/wifi-networks')
+            .then(response => response.text())
+            .then(text => {
+                const select = document.getElementById('ssid');
+                select.innerHTML = '<option value="">Select WiFi Network</option>'; // Clear existing options
+                const ssids = text.split(';');
+                ssids.forEach(ssid => {
+                    ssid = ssid.trim();
+                    if (ssid) {
+                        const option = document.createElement('option');
+                        option.value = option.text = ssid;
+                        select.appendChild(option);
+                    }
+                });
+            })
+            .catch(error => console.error('Error loading the WiFi networks:', error));
+        }
+    </script>
+</body>
+</html>
