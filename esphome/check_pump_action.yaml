@@ -1,0 +1,16 @@
+id: check_pump_${pump_idx}
+then:
+  - if:
+      condition:
+        and:
+          - lambda: 'return id(sprinkler_ctrlr).enable_switch(${pump_idx})->state;'
+          - lambda: 'return !(id(sprinkler_ctrlr).valve_switch(${pump_idx})->state());'
+          - lambda: 'return id(${last_run_config_id}) + id(${pump_frequency_id}).state < id(sntp_time).now().timestamp;'
+      then:
+        - logger.log: "Pump ${pump_idx} is enabled and will run"
+        - sprinkler.queue_valve:
+            id: sprinkler_ctrlr
+            valve_number: ${pump_idx}
+        - globals.set:
+            id: ${last_run_config_id}
+            value: !lambda 'return id(sntp_time).now().timestamp;'

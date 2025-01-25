@@ -981,17 +981,17 @@
                         "strtype": "OBJECT/Position",
                         "intarray": [
                           1,
-                          0
+                          1
                         ],
                         "InheritedType": 7
                       },
                       {
                         "nid": 762737953,
-                        "flags": 34,
+                        "flags": 18,
                         "strtype": "OBJECT/Size",
                         "intarray": [
                           100,
-                          50
+                          36
                         ],
                         "InheritedType": 7
                       },
@@ -1101,11 +1101,11 @@
                   },
                   {
                     "nid": -1136196455,
-                    "flags": 34,
+                    "flags": 18,
                     "strtype": "OBJECT/Size",
                     "intarray": [
                       98,
-                      30
+                      72
                     ],
                     "InheritedType": 7
                   },

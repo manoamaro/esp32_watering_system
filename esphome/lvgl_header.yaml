@@ -1,0 +1,57 @@
+obj:
+  styles: header_footer
+  height: 72
+  layout:
+    type: FLEX
+    flex_flow: COLUMN
+    flex_align_main: SPACE_EVENLY
+    flex_align_cross: SPACE_EVENLY
+    flex_align_track: SPACE_EVENLY
+  widgets:
+    - obj:
+        styles: clean
+        width: 100%
+        height: 50%
+        text_color: 0xFFFFFF
+        layout:
+          type: FLEX
+          flex_flow: ROW
+          flex_align_main: SPACE_EVENLY
+          flex_align_cross: SPACE_EVENLY
+          flex_align_track: SPACE_EVENLY
+        widgets:
+          - label:
+              id: lbl_time
+              text_align: right
+              text: 'Not connected'
+          - label:
+              text: "\uF1EB"
+              id: lbl_wifi
+              hidden: true
+    - obj:
+        styles: clean
+        width: 100%
+        height: 50%
+        text_color: 0xFFFFFF
+        scrollbar_mode: "OFF"
+        layout:
+          type: FLEX
+          flex_flow: ROW
+          flex_align_main: SPACE_EVENLY
+          flex_align_cross: SPACE_EVENLY
+          flex_align_track: SPACE_EVENLY
+        widgets:
+          - image:
+              width: 24
+              height: 24
+              src: thermometer
+          - label:
+              id: lbl_temperature
+              text: ""
+          - image:
+              width: 24
+              height: 24
+              src: water_percent
+          - label:
+              id: lbl_humidity
+              text: ""

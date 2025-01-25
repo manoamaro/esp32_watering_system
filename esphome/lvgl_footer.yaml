@@ -1,0 +1,37 @@
+obj:
+  align: bottom_mid
+  styles: header_footer
+  layout:
+    type: FLEX
+    flex_flow: ROW
+    flex_align_main: SPACE_EVENLY
+    flex_align_cross: SPACE_EVENLY
+    flex_align_track: SPACE_EVENLY
+  widgets:
+    - button:
+        id: btn_left
+        width: 33%
+        styles: header_footer
+        widgets:
+          - label:
+              text: "\uF053"
+              align: CENTER
+              text_align: CENTER
+    - button:
+        id: btn_middle
+        width: 34%
+        styles: header_footer
+        widgets:
+          - label:
+              text: "\uF015"
+              align: CENTER
+              text_align: CENTER
+    - button:
+        id: btn_right
+        width: 33%
+        styles: header_footer
+        widgets:
+          - label:
+              text: "\uF054"
+              align: CENTER
+              text_align: CENTER

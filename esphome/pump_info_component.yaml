@@ -1,0 +1,15 @@
+obj:
+  height: 42
+  group: main_group
+  scrollbar_mode: "OFF"
+  width: 100%
+  click_focusable: true
+  focused:
+    border_color: 0x0000FF
+    border_width: 2
+  layout:
+    type: FLEX
+    flex_flow: COLUMN_WRAP
+    flex_align_main: SPACE_EVENLY
+    flex_align_cross: SPACE_EVENLY
+    flex_align_track: SPACE_EVENLY

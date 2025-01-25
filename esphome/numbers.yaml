@@ -1,0 +1,32 @@
+number:
+  - platform: template
+    id: pump_1_frequency
+    name: "Pump 1 Frequency"
+    min_value: 0
+    max_value: 43200
+    step: 5
+    unit_of_measurement: "s"
+    initial_value: 3600
+    optimistic: true
+    restore_value: true
+  - platform: template
+    id: pump_2_frequency
+    name: "Pump 2 Frequency"
+    min_value: 0
+    max_value: 43200
+    step: 5
+    unit_of_measurement: "s"
+    initial_value: 3600
+    optimistic: true
+    restore_value: true
+  - platform: template
+    id: pump_3_frequency
+    name: "Pump 3 Frequency"
+    min_value: 0
+    max_value: 43200
+    step: 5
+    unit_of_measurement: "s"
+    initial_value: 3600
+    optimistic: true
+    restore_value: true
+

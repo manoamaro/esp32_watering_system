@@ -9,6 +9,7 @@
 #include "analog_sensor.hpp"
 #include <WiFiProvisioner.h>
 #include <utils.hpp>
+#include "firebase.hpp"
 
 /*************************************************************
  * Definitions
@@ -41,13 +42,6 @@
 #define BUTTON_3_PIN GPIO_NUM_17
 #define PUMP_COUNT 3
 #define TEMP_SENSOR_OFFSET -6
-
-#include <FirebaseClient.h>
-const char API_KEY[] = "AIzaSyDzqjQTFz9MuvBVpUR7y_56q15yMaYkMb8";
-const char FIREBASE_PROJECT_ID[] = "watering-system-e026c";
-const char FIREBASE_CLIENT_EMAIL[] = "firebase-adminsdk-nnyur@watering-system-e026c.iam.gserviceaccount.com";
-const char PRIVATE_KEY[] PROGMEM = "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC2PzQRZ98ek3im\nCQwQFENIYbC8LcDE8JaTLmqqs/TmFG9bAqHlPXMaJJ8K1ISNCbktl/4csi8FSc+p\nYWpn+XY0tiDNM9+GXBT4c0NYz7/aFIZR7CGUhwZTkNWM7haTwDCXtqKdlO1lnh4r\n0ybRyuHRf1hMdCq+S5I61x1yTN3Sf8zyUb0GJcJVAWZOYUo0kXWLUpCLaUu79RgZ\nWqA5z7uNlZPeZwxOt8pnx4VGayD/1Q80apWZMXgSVr7Q4FeS+v+ESC8Hm2DfAN+X\nflJONaOUBzTU8H64I5CVlvnbcc8MY/yvfk2+gdZ01+Al1MfgRFdvAaNvfa1ZjJcc\nCv4FO6F/AgMBAAECggEAVq2k1Ap1IhO9tCplZFhez9Q2vKl+H6zV0NaowNuqRKu/\ncqfD3EXnsq1sPzhoerP/MOIzZ+6PUpKSg9rjQuRxBg0BeNeNHlg5WRlpFJpqgwxz\n/g6ywfOeXKxsBQVQE6G6+s1QdmZYqpYTf4CD3BAEayGIG4S8t5k1yWp6hNxuPCjg\nzPXzdKED5lic7RbZlfoML8eXKivWgihqhSYKx4VYhCbrgA2VzsCMZK35R/9ryBNC\nunjg6BewazL6emLvDoIOeM/msqbeI4DF0Zdj4LA7mkOfivyG3YFQppZzlqOdPHaB\nfslA+NEkbpyv+oq6q4XAT6H7j4b/3LvfJJn5/kJVsQKBgQD6xVirgBQYhw73fROs\nzT6ROIniS+yNQsyaVzJLT37ASnIAA8XSY8Zqv9rBoanF9m7pFG8hzou5mpmrDJeD\ntucAtDAkCt4IJYHzhRcRB42YzEsz4FtSmRLcnfztV4HeRQ+qVScxAQftSWBlI3wG\ngcYJboEYgcipgIWDkt1jNlsDvQKBgQC6DBC8JxsrbX0wkLfBI9DUPmJ0Hj/ICIRj\nsaDZqGXGzTReKmsrVCHjBXwQv2i0vlb/XJTHNiaq+qi+ke1Sl1vZ7eNA7QYCSaSw\n85g1f3TwMuNL4tNYnoeov75/MW+OOMDdiWDa2su3/gGzbCyGxnu183lOMGRq25Nr\n53RYyjWv6wKBgCUqdG7Oh6vu8F/rsKvOq3Q4be8VE5UIDmzdeX3B5WY4YlbwODRr\nRy/xCUnjXNcTI/L1bVcUVo8Gg7nfHuGNjQUEr5HX7npEnNLrqbSDaw/3Tzn8CWzf\ndPUvkRnX+05m6+BxyGIx5evcESZMMQiB2UjykL2CFqxQePk8HgWjO6/9AoGBAIfB\n8hw5tPu1g1qC33NR/TpC43iz8fq3LFPK9AKffNTaPFJSRa1yUN/lyqg14+Ov2K+y\nEOZkv0aYbbXRqglQZTfa/K8Nxgq5TjHJLtIq1VvI5k8jjvDljTw33nvVyP9Qrnt5\nmXFZorn54afZUYxvHSqiJWxGp5/J5gMg+6cmtpJNAoGBALwooUf/dl5Yg/NT9Zj6\nd6krcQOJ1Iqe2O/lsDCeaUf4bfYXMldUaqLqp7MpYGW0NIHd2ke1b0QAodqTaH80\nieNImbbcaBSEU67EsAhnPBbqeQRjtzKLYOnj1OKCBL5czat5vNJ+N/kMT0jBskCq\nuM2QugS0bDLTwoUeCqNySdFf\n-----END PRIVATE KEY-----\n";
-ServiceAuth sa_auth(timeStatusCB, FIREBASE_CLIENT_EMAIL, FIREBASE_PROJECT_ID, PRIVATE_KEY, 3000 /* expire period in seconds (<= 3600) */);
 
 
 /*************************************************************
@@ -109,6 +103,7 @@ lv_indev_t *buttonIndev = NULL;
 WiFiProvisioner::WiFiProvisioner wifiProvisioner;
 
 char *deviceUid = utils::getMacAddress();
+Firebase firebase;
 
 void setup()
 {
@@ -168,6 +163,8 @@ void setup()
         soilSensors[pumpIdx].setmax(pumpController->config.soilSensorDryValue);
         soilSensors[pumpIdx].setmin(pumpController->config.soilSensorWetValue);
     }
+
+    
 }
 
 void loop()
@@ -317,11 +314,16 @@ void checkPump(void *pvParameters)
         {
             auto pumpController = &pumpControllers[pumpIdx];
             auto pumpContainer = getPumpUI(pumpIdx);
+            auto soilSensor = &soilSensors[pumpIdx];
+            auto lightSensorValue = lightSensor.getValuePercentage();
+            auto soilSensorValue = soilSensor->getInvertedValuePercentage();
+
+            lv_lock();
+
             auto pumpRunning = ui_comp_get_child(pumpContainer, UI_COMP_PUMPCONTAINER_LABELCONTAINER_RUNNING);
             auto pumpProgress = ui_comp_get_child(pumpContainer, UI_COMP_PUMPCONTAINER_PROGRESS);
             auto pumpSoil = ui_comp_get_child(pumpContainer, UI_COMP_PUMPCONTAINER_SOIL);
             auto pumpLight = ui_comp_get_child(pumpContainer, UI_COMP_PUMPCONTAINER_LIGHT);
-            lv_lock();
 
             lv_obj_set_state(pumpContainer, LV_STATE_DISABLED, !pumpController->config.enabled);
             lv_obj_set_state(pumpRunning, LV_STATE_DISABLED, !pumpController->config.enabled);
@@ -332,10 +334,10 @@ void checkPump(void *pvParameters)
             if (pumpController->config.enabled)
             {
 
-                lv_arc_set_value(pumpSoil, soilSensors[pumpIdx].getInvertedValuePercentage());
-                lv_arc_set_value(pumpLight, lightSensor.getValuePercentage());
+                lv_arc_set_value(pumpSoil, soilSensorValue);
+                lv_arc_set_value(pumpLight, lightSensorValue);
 
-                if (lightSensor.getValuePercentage() >= pumpController->config.minLightTreshold)
+                if (lightSensorValue >= pumpController->config.minLightTreshold)
                 {
                     lv_obj_add_state(pumpLight, LV_STATE_USER_1);
                     lv_obj_remove_state(pumpLight, LV_STATE_USER_2);
@@ -346,24 +348,24 @@ void checkPump(void *pvParameters)
                     lv_obj_remove_state(pumpLight, LV_STATE_USER_1);
                 }
 
-                if (soilSensors[pumpIdx].getInvertedValuePercentage() >= pumpController->config.maxSoilMoistureTreshold)
-                {
-                    lv_obj_add_state(pumpSoil, LV_STATE_USER_2);
-                    lv_obj_remove_state(pumpSoil, LV_STATE_USER_1);
-                }
-                else
+                if (soilSensorValue <= pumpController->config.maxSoilMoistureTreshold)
                 {
                     lv_obj_add_state(pumpSoil, LV_STATE_USER_1);
                     lv_obj_remove_state(pumpSoil, LV_STATE_USER_2);
                 }
+                else
+                {
+                    lv_obj_add_state(pumpSoil, LV_STATE_USER_2);
+                    lv_obj_remove_state(pumpSoil, LV_STATE_USER_1);
+                }
 
-                if (pumpController->isRunning(millis(), humidity, temperature, soilSensors[pumpIdx].getValuePercentage(), lightSensor.getValuePercentage()))
+                if (pumpController->isRunning(millis(), humidity, temperature, soilSensorValue, lightSensorValue))
                 {
                     // Turn on pump
                     ledcWrite(pumpIdx + 1, MAX_PUMP_POWER);
                     lv_obj_update_flag(pumpRunning, LV_OBJ_FLAG_HIDDEN, false);
                     // Update progress bar with remaining pump time
-                    auto runtime = pumpController->calculateRuntime(humidity, temperature, soilSensors[pumpIdx].getValuePercentage(), lightSensor.getValuePercentage());
+                    auto runtime = pumpController->calculateRuntime(humidity, temperature, soilSensorValue, lightSensorValue);
                     auto nextRun = pumpController->lastRunMillis + pumpController->config.frequencyMillis;
                     auto remaining = nextRun + runtime - millis();
                     lv_bar_set_value(pumpProgress, map(remaining, 0, runtime, 0, 100), LV_ANIM_ON);
@@ -379,7 +381,7 @@ void checkPump(void *pvParameters)
                     lv_bar_set_value(pumpProgress, map(remaining, 0, pumpController->config.frequencyMillis, 0, 100), LV_ANIM_ON);
                 }
 
-                if (pumpController->shouldRun(humidity, temperature, soilSensors[pumpIdx].getValuePercentage(), lightSensor.getValuePercentage()))
+                if (pumpController->shouldRun(humidity, temperature, soilSensorValue, lightSensorValue))
                 {
                     lv_obj_remove_state(pumpProgress, LV_STATE_DISABLED);
                 }
