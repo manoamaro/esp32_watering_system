@@ -1,16 +1,33 @@
+substitutions:
+  update_soil_interval: 1s
+
 packages:
-  lvgl: !include lvgl.yaml
-  sprinkler: !include sprinkler.yaml
-  number: !include numbers.yaml
-  global: !include globals.yaml
+  lvgl: !include internal/ui/lvgl.yaml
+  pump0: !include
+    file: internal/pump.yaml
+    vars:
+      id: 0
+      pin: GPIO12
+      soil_sensor_pin: GPIO39
+  pump1: !include
+    file: internal/pump.yaml
+    vars:
+      id: 1
+      pin: GPIO4
+      soil_sensor_pin: GPIO34
+  pump2: !include
+    file: internal/pump.yaml
+    vars:
+      id: 2
+      pin: GPIO14
+      soil_sensor_pin: GPIO35
 
 esphome:
   name: watering_system
   friendly_name: Watering System
-  name_add_mac_suffix: true
 
 esp32:
-  board: esp32-s3-devkitc-1
+  board: esp32dev
   framework:
     type: arduino
 
@@ -21,43 +38,31 @@ logger:
 # Enable Home Assistant API
 api:
   reboot_timeout: 0s
-  on_client_connected:
-    - if:
-        condition:
-          lambda: 'return (0 == client_info.find("Home Assistant "));'
-        then:
-          - lvgl.widget.show: lbl_wifi
-  on_client_disconnected:
-    - if:
-        condition:
-          lambda: 'return (0 == client_info.find("Home Assistant "));'
-        then:
-          - lvgl.widget.hide: lbl_wifi
 
 wifi:
-  ssid: "CyMano"
+  ssid: "CyMano"  
   password: "@CyMano1234@"
   reboot_timeout: 0s
   ap:
-    ssid: "Watering System Hotspot"
+    ssid: "Watering System"
 
 captive_portal:
 
 time:
-  - platform: sntp
+  - platform: homeassistant
     id: sntp_time
     on_time_sync:
       then:
-        - logger.log: "Synchronized system clock"
-    on_time:
-      - seconds: '*'
-        then:
-          - lvgl.label.update:
-              id: lbl_time
-              text:
-                time_format: "%a. %e %b %Y, %T"
-                time: sntp_time
-          - script.execute: check_pumps
+        - globals.set:
+            id: pump_0_last_run
+            value: !lambda 'return id(sntp_time).now().timestamp;'
+        - globals.set:
+            id: pump_1_last_run
+            value: !lambda 'return id(sntp_time).now().timestamp;'
+        - globals.set:
+            id: pump_2_last_run
+            value: !lambda 'return id(sntp_time).now().timestamp;'
+
 i2c:
   sda: 21
   scl: 22
@@ -68,160 +73,35 @@ spi:
   mosi_pin: GPIO23
   miso_pin: GPIO19
 
-image:
-  - file: "assets/temperature_512.png"
-    type: RGB565
-    id: thermometer
-    resize: 24x24
-    use_transparency: true
-  - file: "assets/humidity_512.png"
-    type: RGB565
-    id: water_percent
-    resize: 24x24
-    use_transparency: true
-  - file: "assets/plant_bad_512.png"
-    type: RGB565
-    id: plant_dry
-    resize: 24x24
-    use_transparency: true
-  - file: "assets/plant_good_512.png"
-    type: RGB565
-    id: plant_wet
-    resize: 24x24
-    use_transparency: true
-  - file: "assets/sun_512.png"
-    type: RGB565
-    id: sun
-    resize: 24x24
-    use_transparency: true
-  - file: "assets/moon_32.png"
-    type: RGB565
-    id: moon
-    resize: 24x24
-    use_transparency: true
-
-font:
-  - file: "fonts/materialdesignicons-webfont.ttf"
-    id: icons_100
-    size: 100
-    bpp: 4
-    glyphs: [
-      "\U000F0594", # clear-night
-      "\U000F0590", # cloudy
-      "\U000F0F2F", # exceptional
-      "\U000F0591", # fog
-      "\U000F0592", # hail
-      "\U000F0593", # lightning
-      "\U000F067E", # lightning-rainy
-      "\U000F0595", # partlycloudy
-      "\U000F0596", # pouring
-      "\U000F0597", # rainy
-      "\U000F0598", # snowy
-      "\U000F067F", # snowy-rainy
-      "\U000F0599", # sunny
-      "\U000F059D", # windy
-      "\U000F059E", # windy-variant
-      "\U000F14E4", # sunny-off
-      ]
-
-display:
-  - platform: ili9xxx
-    id: my_display
-    model: ST7789V
-    dc_pin: GPIO33
-    cs_pin: GPIO5
-    reset_pin: GPIO26
-    dimensions: 240x240
-    rotation: 270
-    invert_colors: true
-    auto_clear_enabled: false
-    update_interval: never
-
-binary_sensor:
-  - platform: gpio
-    id: left_button
-    pin: 
-      number: GPIO13
-      inverted: true
-      mode:
-        input: true
-        pullup: true
-    filters:
-      - delayed_on: 10ms
-    on_state:
-      then:
-        - lvgl.button.update:
-            id: btn_left
-            state:
-              pressed: !lambda return x;
-  - platform: gpio
-    id: middle_button
-    pin: 
-      number: GPIO15
-      inverted: true
-      mode:
-        input: true
-        pullup: true
-    filters:
-      - delayed_on: 10ms
-    on_state:
-      then:
-        - lvgl.button.update:
-            id: btn_middle
-            state:
-              pressed: !lambda return x;
-  - platform: gpio
-    id: right_button
-    pin: 
-      number: GPIO17
-      inverted: true
-      mode:
-        input: true
-        pullup: true
-    filters:
-      - delayed_on: 10ms
-    on_state:
-      then:
-        - lvgl.button.update:
-            id: btn_right
-            state:
-              pressed: !lambda return x;
-
 sensor:
   - platform: bme280_i2c
     id: bme280_sensor
     address: 0x76
     temperature:
       id: bme280_temperature
-      name: "BME280 Temperature"
+      name: "Temperature"
       internal: true
     pressure:
       id: bme280_pressure
-      name: "BME280 Pressure"
+      name: "Pressure"
     humidity:
       id: bme280_humidity
-      name: "BME280 Humidity"
+      name: "Humidity"
       internal: true
     update_interval: 5s
-  - platform: template
-    name: "Altitude"
-    lambda: |-
-      const float STANDARD_SEA_LEVEL_PRESSURE = 1013.25; //in hPa, see note
-      return ((id(temperature).state + 273.15) / 0.0065) *
-        (powf((STANDARD_SEA_LEVEL_PRESSURE / id(bme280_pressure).state), 0.190234) - 1); // in meter
-    update_interval: 15s
-    icon: 'mdi:signal'
-    unit_of_measurement: 'm'
   - platform: absolute_humidity
     id: abs_humidity
     name: "Absolute Humidity"
+    internal: true
     temperature: bme280_temperature
     humidity: bme280_humidity
   - platform: template
     id: temperature
     name: "Temperature"
-    update_interval: 15s
+    update_interval: 5s
     device_class: temperature
+    unit_of_measurement: '°C'
+    state_class: "measurement"
     lambda: |-
       return id(bme280_temperature).state - 6.0;
     on_value:
@@ -250,142 +130,17 @@ sensor:
     device_class: illuminance
     pin: GPIO36
     name: "Light Sensor"
-    update_interval: 5s
+    update_interval: 1s
     attenuation: auto
     unit_of_measurement: "%"
     filters:
       - quantile:
-          window_size: 7
-          send_every: 4
-          send_first_at: 3
-          quantile: .9
       - calibrate_linear:
-          method: exact # or approximate
+          method: exact
           datapoints:
             - 0.65 -> 0.0
-            - 3.15 -> 100              
-  - platform: adc
-    id: soil_sensor_1
-    device_class: moisture
-    pin: GPIO39
-    name: "Soil Sensor 1"
-    update_interval: 5s
-    attenuation: auto
-    filters:
-      - quantile:
-          window_size: 7
-          send_every: 4
-          send_first_at: 3
-          quantile: .9
-  - platform: adc
-    id: soil_sensor_2
-    device_class: moisture
-    pin: GPIO34
-    name: "Soil Sensor 2"
-    update_interval: 5s
-    attenuation: auto
-    filters:
-      - quantile:
-          window_size: 7
-          send_every: 4
-          send_first_at: 3
-          quantile: .9
-  - platform: adc
-    id: soil_sensor_3
-    device_class: moisture
-    pin: GPIO35
-    name: "Soil Sensor 3"
-    update_interval: 5s
-    attenuation: auto
-    filters:
-      - quantile:
-          window_size: 7
-          send_every: 4
-          send_first_at: 3
-          quantile: .9
+            - 3.15 -> 100.0
+      - clamp:
+          min_value: 0
+          max_value: 100
 
-light:
-  - platform: monochromatic
-    id: lcd_backlight
-    internal: true
-    name: "LCD Backlight"
-    output: lcd_backlight_output
-    restore_mode: ALWAYS_ON
-    initial_state:
-      state: ON
-      brightness: 0.75
-
-output:
-  - platform: ledc
-    pin: GPIO27
-    id: lcd_backlight_output
-    frequency: 5000Hz
-  - platform: ledc
-    id: pump_1
-    pin: GPIO12
-    frequency: 5000Hz
-    min_power: 0.0
-    max_power: 0.9
-  - platform: ledc
-    id: pump_2
-    pin: GPIO4
-    frequency: 5000Hz
-    min_power: 0.0
-    max_power: 0.9
-  - platform: ledc
-    id: pump_3
-    pin: GPIO14
-    frequency: 5000Hz
-    min_power: 0.0
-    max_power: 0.9
-
-switch:
-  - platform: output
-    id: pump_1_sw
-    output: pump_1
-    restore_mode: RESTORE_DEFAULT_OFF
-    internal: true
-  - platform: output
-    id: pump_2_sw
-    output: pump_2
-    restore_mode: RESTORE_DEFAULT_OFF
-    internal: true
-  - platform: output
-    id: pump_3_sw
-    output: pump_3
-    restore_mode: RESTORE_DEFAULT_OFF
-    internal: true
-
-script:
-  - !include 
-    file: check_pump_action.yaml
-    vars:
-      pump_idx: 0
-      last_run_config_id: pump_1_last_run
-      pump_frequency_id: pump_1_frequency
-  - !include 
-    file: check_pump_action.yaml
-    vars:
-      pump_idx: 1
-      last_run_config_id: pump_2_last_run
-      pump_frequency_id: pump_2_frequency
-  - !include 
-    file: check_pump_action.yaml
-    vars:
-      pump_idx: 2
-      last_run_config_id: pump_3_last_run
-      pump_frequency_id: pump_3_frequency
-  - id: check_pumps
-    then:
-      - logger.log: "Checking pumps"
-      - script.execute:
-          id: check_pump_0
-      - script.execute:
-          id: check_pump_1
-      - script.execute:
-          id: check_pump_2
-      - script.wait: check_pump_0
-      - script.wait: check_pump_1
-      - script.wait: check_pump_2
-      - sprinkler.start_from_queue:
-          id: sprinkler_ctrlr

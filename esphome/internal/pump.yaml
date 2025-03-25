@@ -1,0 +1,265 @@
+packages:
+  soil_sensor_${id}: !include
+    file: soil_sensor.yaml
+    vars:
+      id: ${id}
+      pin: ${soil_sensor_pin}
+      update_interval: $update_soil_interval
+
+globals:
+  - id: pump_${id}_last_run
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: pump_${id}_force_run
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+datetime:
+  - platform: template
+    id: pump_${id}_frequency
+    type: time
+    name: "Pump ${id} Frequency"
+    optimistic: yes
+    initial_value: "01:00:00"
+    restore_value: true
+    entity_category: "config"
+  - platform: template
+    id: pump_${id}_next_run_time
+    type: time
+    update_interval: 1s
+    set_action:
+      then:
+        - lambda: "return;"
+    lambda: |-
+      if (!id(sntp_time).now().is_valid()) {
+        return {};
+      }
+      uint32_t now = id(sntp_time).now().timestamp;
+      uint32_t last_run = id(pump_${id}_last_run);
+      int frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
+      uint32_t next_run = last_run + frequency;
+      if (now >= next_run) {
+        int duration = id(pump_${id}_duration).state;
+        next_run = next_run + duration;
+      }
+      return ESPTime::from_epoch_utc(next_run - now);
+    on_value:
+      then:
+        - if:
+            condition:
+              - switch.is_on: pump_${id}_enabled
+            then:
+              - lvgl.label.update:
+                  id: lbl_pump_${id}_next
+                  text:
+                    time_format: "%T"
+                    time: !lambda return x;
+
+
+number:
+  - platform: template
+    id: pump_${id}_power
+    name: "Pump ${id} Power"
+    min_value: 0
+    max_value: 100
+    step: 0.5
+    unit_of_measurement: "%"
+    initial_value: 50
+    optimistic: true
+    restore_value: true
+    device_class: "power_factor"
+    mode: "box"
+    entity_category: "config"
+  - platform: template
+    id: pump_${id}_duration
+    name: "Pump ${id} Duration"
+    min_value: 0
+    max_value: 3600
+    step: 5
+    unit_of_measurement: "s"
+    initial_value: 10
+    optimistic: true
+    restore_value: true
+    device_class: "duration"
+    mode: "box"
+    entity_category: "config"
+  - platform: template
+    id: pump_${id}_min_temperture
+    name: "Pump ${id} Mininum Temperture"
+    min_value: -20
+    max_value: 50
+    step: 1
+    unit_of_measurement: "°C"
+    initial_value: 10
+    optimistic: true
+    restore_value: true
+    device_class: "temperature"
+    mode: "box"
+    entity_category: "config"
+  - platform: template
+    id: pump_${id}_min_light
+    name: "Pump ${id} Mininum Light"
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial_value: 50
+    optimistic: true
+    restore_value: true
+    device_class: "illuminance"
+    mode: "box"
+    entity_category: "config"
+  - platform: template
+    id: pump_${id}_max_soil_moisture
+    name: "Pump ${id} Maximum Soil Moisture"
+    min_value: 0
+    max_value: 100
+    step: 1
+    unit_of_measurement: "%"
+    initial_value: 50
+    optimistic: true
+    restore_value: true
+    device_class: "moisture"
+    mode: "box"
+    entity_category: "config"
+
+output:
+  - platform: ledc
+    id: pump_${id}_output
+    pin: $pin
+    frequency: 5000Hz
+    min_power: 0.0
+    max_power: 1.0
+
+switch:
+  - platform: output
+    id: pump_${id}_sw
+    output: pump_${id}_output
+    restore_mode: RESTORE_DEFAULT_OFF
+    internal: true
+    on_turn_on:
+      - output.set_level:
+          id: pump_${id}_output
+          level: !lambda 'return id(pump_${id}_power).state / 100.0;'
+      - lvgl.widget.show: spinner_pump_${id}
+    on_turn_off:
+      - lvgl.widget.hide: spinner_pump_${id}
+  - platform: template
+    name: "Pump ${id}"
+    id: pump_${id}_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_on:
+      - lvgl.widget.enable:
+          - lbl_pump_${id}
+          - img_pump_${id}_light
+          - img_pump_${id}_soil
+          - lbl_pump_${id}_next
+    on_turn_off:
+      - lvgl.widget.disable:
+          - lbl_pump_${id}
+          - img_pump_${id}_light
+          - img_pump_${id}_soil
+          - lbl_pump_${id}_next
+      - lvgl.label.update:
+          id: lbl_pump_${id}_next
+          text: "off"
+
+button:
+  - platform: template
+    name: "Run Pump ${id}"
+    on_press:
+      - lambda: |-
+          auto frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
+          auto duration = id(pump_${id}_duration).state;
+          auto now = id(sntp_time).now().timestamp;
+          auto last_run = id(pump_${id}_last_run);
+          id(pump_${id}_last_run) = now - frequency;
+          id(pump_${id}_force_run) = true;
+
+binary_sensor:
+  - platform: template
+    id: pump_${id}_is_light
+    name: "Pump ${id} Light"
+    internal: true
+    publish_initial_state: true
+    lambda: |-
+      return id(pump_${id}_force_run) || id(pump_${id}_min_light).state < id(light_sensor).state;
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return x;'
+            then:
+              - lvgl.image.update: 
+                  id: img_pump_${id}_light
+                  src: sun
+            else:
+              - lvgl.image.update: 
+                  id: img_pump_${id}_light
+                  src: moon
+  - platform: template
+    id: pump_${id}_is_soil_moisture
+    name: "Pump ${id} Soil Moisture"
+    internal: true
+    publish_initial_state: true
+    lambda: |-
+      return id(pump_${id}_force_run) || id(pump_${id}_max_soil_moisture).state > id(soil_sensor_${id}).state;
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return x;'
+            then:
+              - lvgl.image.update: 
+                  id: img_pump_${id}_soil
+                  src: plant_dry
+            else:
+              - lvgl.image.update: 
+                  id: img_pump_${id}_soil
+                  src: plant_wet
+  - platform: template
+    id: pump_${id}_is_time
+    name: "Pump ${id} Time"
+    internal: true
+    publish_initial_state: true
+    lambda: |-
+      if (!id(sntp_time).now().is_valid()) {
+        return false;
+      }
+      uint32_t now = id(sntp_time).now().timestamp;
+      uint32_t last_run = id(pump_${id}_last_run);
+      int frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
+      int duration = id(pump_${id}_duration).state;
+      uint32_t next_run = last_run + frequency;
+      uint32_t end_run = next_run + duration;
+      if (now >= next_run && now <= end_run) {
+        return true;
+      } else if (now > end_run) {
+        id(pump_${id}_last_run) = now;
+        id(pump_${id}_force_run) = false;
+        return false;
+      } else {
+        return false;
+      }
+  - platform: template
+    id: pump_${id}_is_running
+    name: "Pump ${id} is Running"
+    condition:
+      and:
+        - switch.is_on: pump_${id}_enabled
+        - binary_sensor.is_on: pump_${id}_is_light
+        - binary_sensor.is_on: pump_${id}_is_soil_moisture
+        - binary_sensor.is_on: pump_${id}_is_time
+    publish_initial_state: true
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return x;'
+            then:
+              - switch.turn_on: pump_${id}_sw
+            else:
+              - switch.turn_off: pump_${id}_sw

@@ -1,0 +1,62 @@
+globals:
+  - id: soil_sensor_${id}_dry
+    type: float
+    restore_value: yes
+    initial_value: '3.3'
+  - id: soil_sensor_${id}_wet
+    type: float
+    restore_value: yes
+    initial_value: '0'
+
+button:
+  - platform: template
+    id: soil_sensor_${id}_set_dry
+    name: "Set Dry Value ${id}"
+    entity_category: "config"
+    on_press:
+      - lambda: |-
+          id(soil_sensor_${id}_dry) = id(soil_sensor_${id}_raw).state;
+  - platform: template
+    id: soil_sensor_${id}_set_wet
+    name: "Set Wet Value ${id}"
+    entity_category: "config"
+    on_press:
+      - lambda: |-
+          id(soil_sensor_${id}_wet) =  id(soil_sensor_${id}_raw).state;
+sensor:
+  - platform: adc
+    id: soil_sensor_${id}_raw
+    device_class: voltage
+    pin: $pin
+    name: "Soil Sensor ${id} raw"
+    update_interval: $update_interval
+    entity_category: "diagnostic"
+    state_class: "measurement"
+    attenuation: auto
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: soil_sensor_${id}
+            state: !lambda 'return x;'
+  - platform: template
+    id: soil_sensor_${id}
+    device_class: moisture
+    name: "Soil Sensor ${id}"
+    update_interval: never
+    accuracy_decimals: 2
+    unit_of_measurement: '%'
+    state_class: "measurement"
+    filters:
+    - quantile:
+    - lambda: |-
+        if (id(soil_sensor_${id}_dry) == id(soil_sensor_${id}_wet)) {
+          return 0.0;
+        }
+        float in_min = id(soil_sensor_${id}_dry);
+        float in_max = id(soil_sensor_${id}_wet);
+        float out_min = 0.0;
+        float out_max = 100.0;
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    - clamp:
+        min_value: 0
+        max_value: 100

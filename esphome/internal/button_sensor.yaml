@@ -1,0 +1,17 @@
+---
+platform: gpio
+id: $id
+pin: 
+  number: $pin
+  inverted: true
+  mode:
+    input: true
+    pullup: true
+filters:
+  - delayed_on: 10ms
+on_state:
+  then:
+    - lvgl.button.update:
+        id: $lvgl_btn_id
+        state:
+          pressed: !lambda return x;

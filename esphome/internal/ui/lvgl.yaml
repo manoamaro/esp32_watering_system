@@ -1,0 +1,279 @@
+display:
+  - platform: ili9xxx
+    id: my_display
+    model: ST7789V
+    dc_pin: GPIO33
+    cs_pin: GPIO5
+    reset_pin: GPIO26
+    dimensions: 240x240
+    rotation: 270
+    invert_colors: true
+    auto_clear_enabled: false
+    update_interval: never
+
+image:
+  - file: "assets/temperature_512.png"
+    type: RGB565
+    id: thermometer
+    resize: 24x24
+    transparency: alpha_channel
+  - file: "assets/humidity_512.png"
+    type: RGB565
+    id: water_percent
+    resize: 24x24
+    transparency: alpha_channel
+  - file: "assets/plant_bad_512.png"
+    type: RGB565
+    id: plant_dry
+    resize: 24x24
+    transparency: alpha_channel
+  - file: "assets/plant_good_512.png"
+    type: RGB565
+    id: plant_wet
+    resize: 24x24
+    transparency: alpha_channel
+  - file: "assets/sun_512.png"
+    type: RGB565
+    id: sun
+    resize: 24x24
+    transparency: alpha_channel
+  - file: "assets/moon_32.png"
+    type: RGB565
+    id: moon
+    resize: 24x24
+    transparency: alpha_channel
+
+font:
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons_42
+    size: 42
+    bpp: 4
+    glyphs: [
+      "\U000F0594", # clear-night
+      "\U000F0590", # cloudy
+      "\U000F0F2F", # exceptional
+      "\U000F0591", # fog
+      "\U000F0592", # hail
+      "\U000F0593", # lightning
+      "\U000F067E", # lightning-rainy
+      "\U000F0595", # partlycloudy
+      "\U000F0596", # pouring
+      "\U000F0597", # rainy
+      "\U000F0598", # snowy
+      "\U000F067F", # snowy-rainy
+      "\U000F0599", # sunny
+      "\U000F059D", # windy
+      "\U000F059E", # windy-variant
+      "\U000F14E4", # sunny-off
+      "\U000F050F", # thermometer
+      "\U000F058E", # water-percent
+      "\U000F1060", # sprinkler
+      "\U000F058C", # water
+      "\U000F058D", # water-off
+      ]
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons_24
+    size: 24
+    bpp: 4
+    glyphs: [
+      "\U000F0594", # clear-night
+      "\U000F0590", # cloudy
+      "\U000F0F2F", # exceptional
+      "\U000F0591", # fog
+      "\U000F0592", # hail
+      "\U000F0593", # lightning
+      "\U000F067E", # lightning-rainy
+      "\U000F0595", # partlycloudy
+      "\U000F0596", # pouring
+      "\U000F0597", # rainy
+      "\U000F0598", # snowy
+      "\U000F067F", # snowy-rainy
+      "\U000F0599", # sunny
+      "\U000F059D", # windy
+      "\U000F059E", # windy-variant
+      "\U000F14E4", # sunny-off
+      "\U000F050F", # thermometer
+      "\U000F058E", # water-percent
+      "\U000F1060", # sprinkler
+      "\U000F058C", # water
+      "\U000F058D", # water-off
+      ]
+
+binary_sensor:
+  - !include
+    file: ../button_sensor.yaml
+    vars:
+      id: left_button
+      pin: GPIO13
+      lvgl_btn_id: btn_left
+  - !include
+    file: ../button_sensor.yaml
+    vars:
+      id: middle_button
+      pin: GPIO15
+      lvgl_btn_id: btn_middle
+  - !include
+    file: ../button_sensor.yaml
+    vars:
+      id: right_button
+      pin: GPIO17
+      lvgl_btn_id: btn_right
+
+output:
+  - platform: ledc
+    pin: GPIO27
+    id: lcd_backlight_output
+    frequency: 5000Hz
+
+light:
+  - platform: monochromatic
+    id: lcd_backlight
+    internal: true
+    name: "LCD Backlight"
+    output: lcd_backlight_output
+    restore_mode: ALWAYS_ON
+    initial_state:
+      state: ON
+      brightness: 0.65
+
+lvgl:
+  displays:
+    - my_display
+  buffer_size: 0.25
+  on_idle:
+    - timeout: 30s
+      then:
+        - lvgl.page.show: main_page
+    - timeout: 120s
+      then:
+        - light.turn_off: lcd_backlight
+        - lvgl.pause:
+  on_resume:
+    then:
+      - light.turn_on: lcd_backlight
+  encoders:
+    - id: encoder
+      group: main_group
+      enter_button: middle_button
+      sensor:
+        left_button: left_button
+        right_button: right_button
+  theme:
+    button:
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_color: 0x0077b3
+      border_width: 1
+      text_color: 0xFFFFFF
+      pressed: # set some button colors to be different in pressed state
+        bg_color: 0x006699
+        bg_grad_color: 0x00334d
+      checked: # set some button colors to be different in checked state
+        bg_color: 0x1d5f96
+        bg_grad_color: 0x03324A
+        text_color: 0xfff300
+    buttonmatrix:
+      bg_opa: TRANSP
+      border_color: 0x0077b3
+      border_width: 0
+      text_color: 0xFFFFFF
+      pad_all: 0
+      items: # set all your buttonmatrix buttons to use your custom defined styles and font
+        bg_color: 0x2F8CD8
+        bg_grad_color: 0x005782
+        bg_grad_dir: VER
+        bg_opa: COVER
+        border_color: 0x0077b3
+        border_width: 1
+        text_color: 0xFFFFFF
+        pressed:
+          bg_color: 0x006699
+          bg_grad_color: 0x00334d
+        checked:
+          bg_color: 0x1d5f96
+          bg_grad_color: 0x03324A
+          text_color: 0x005580
+    switch:
+      bg_color: 0xC0C0C0
+      bg_grad_color: 0xb0b0b0
+      bg_grad_dir: VER
+      bg_opa: COVER
+      checked:
+        bg_color: 0x1d5f96
+        bg_grad_color: 0x03324A
+        bg_grad_dir: VER
+        bg_opa: COVER
+      knob:
+        bg_color: 0xFFFFFF
+        bg_grad_color: 0xC0C0C0
+        bg_grad_dir: VER
+        bg_opa: COVER
+    slider:
+      border_width: 1
+      border_opa: 15%
+      bg_color: 0xcccaca
+      bg_opa: 15%
+      indicator:
+        bg_color: 0x1d5f96
+        bg_grad_color: 0x03324A
+        bg_grad_dir: VER
+        bg_opa: COVER
+      knob:
+        bg_color: 0x2F8CD8
+        bg_grad_color: 0x005782
+        bg_grad_dir: VER
+        bg_opa: COVER
+        border_color: 0x0077b3
+        border_width: 1
+        text_color: 0xFFFFFF
+  style_definitions:
+    - id: clean
+      bg_opa: TRANSP
+      border_opa: TRANSP
+      border_width: 0
+      border_color: 0x000000
+      radius: 0
+      pad_all: 0
+      scrollbar_mode: "OFF"
+    - id: header_footer
+      bg_color: 0x2F8CD8
+      bg_grad_color: 0x005782
+      bg_grad_dir: VER
+      bg_opa: COVER
+      border_opa: TRANSP
+      radius: 0
+      pad_all: 0
+      pad_row: 0
+      pad_column: 0
+      border_color: 0x0077b3
+      text_color: 0xFFFFFF
+      width: 100%
+      height: 36
+      scrollbar_mode: "OFF"
+    - id: page
+      width: 100%
+      height: 100%
+      pad_top: 36
+      pad_bottom: 36
+    - id: pump_info
+      height: 52
+      scrollbar_mode: "OFF"
+      width: 100%
+    - id: pump_info_disabled
+      bg_color: 0x000000
+      bg_opa: 50%
+
+  top_layer:
+    widgets:
+      - !include lvgl_header.yaml
+      - !include lvgl_footer.yaml
+  pages:
+    - !include main_page.yaml
+
+wifi:
+  on_connect:
+    - lvgl.widget.show: lbl_wifi
+  on_disconnect:
+    - lvgl.widget.hide: lbl_wifi

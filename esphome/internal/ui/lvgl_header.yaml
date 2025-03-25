@@ -1,0 +1,27 @@
+obj:
+  styles: header_footer
+  layout:
+    type: FLEX
+    flex_flow: ROW
+    flex_align_main: SPACE_EVENLY
+    flex_align_cross: CENTER
+    flex_align_track: CENTER
+  widgets:
+    - image:
+        width: 24
+        height: 24
+        src: thermometer
+    - label:
+        id: lbl_temperature
+        text: ""
+    - image:
+        width: 24
+        height: 24
+        src: water_percent
+    - label:
+        id: lbl_humidity
+        text: ""
+    - label:
+        text: "\uF1EB"
+        id: lbl_wifi
+        hidden: true

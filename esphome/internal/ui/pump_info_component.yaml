@@ -1,0 +1,56 @@
+obj:
+  id: obj_pump_${id}_info
+  styles: [pump_info]
+  group: main_group
+  layout:
+    type: FLEX
+    flex_flow: ROW
+    flex_align_main: START
+    flex_align_cross: CENTER
+    flex_align_track: CENTER
+  click_focusable: false
+  clickable: true
+  scrollable: false
+  focused:
+    border_color: 0x0000FF
+    border_width: 2
+  disabled:
+    opa: 50%
+  on_click:
+    then:
+      - globals.set:
+          id: pump_${id}_last_run
+          value: !lambda 'return id(sntp_time).now().timestamp;'
+  widgets:
+    - label:
+        id: lbl_pump_${id}
+        text_font: icons_24
+        text: "\U000F1060"
+        pad_left: 5
+        disabled:
+          text_color: 0xFF0000
+    - image:
+        id: img_pump_${id}_light
+        pad_left: 5
+        src: sun
+        disabled:
+          image_recolor: 0x000000
+    - image:
+        id: img_pump_${id}_soil
+        pad_left: 5
+        src: plant_dry
+        disabled:
+          image_recolor: 0x000000
+    - label:
+        id: lbl_pump_${id}_next
+        pad_left: 5
+        text: "00:00:00"
+    - spinner:
+        id: spinner_pump_${id}
+        spin_time: 2s
+        arc_length: 60deg
+        arc_width: 4
+        width: 24
+        height: 24
+        indicator:
+          arc_width: 4
