@@ -15,15 +15,12 @@ jobs:
   esphome_ci:
     name: Building ${{ matrix.file }} / ${{ matrix.esphome-version }}
     runs-on: ubuntu-latest
-    defaults:
-        run:
-          working-directory: esphome
     strategy:
       fail-fast: false
       max-parallel: 3
       matrix:
         file:
-          - watering_system
+          - esphome/watering_system
         esphome-version:
           - stable
           - beta
