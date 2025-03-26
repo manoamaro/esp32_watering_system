@@ -15,6 +15,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag_version.outputs.new_tag }}
+      version: ${{ steps.tag_version.outputs.new_version }}
+      releaseSummary: ${{ steps.tag_version.outputs.changelog }}
+      releaseUrl: ${{ steps.create_release.outputs.html_url }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4.2.2
@@ -30,6 +35,7 @@ jobs:
           append_to_pre_release_tag: "-SNAPSHOT"
           custom_release_rules: "feature:minor,bug:patch,hotfix:patch,breaking:major"
       - name: Create a GitHub release
+        id: create_release
         uses: ncipollo/release-action@v1.16.0
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
@@ -37,3 +43,24 @@ jobs:
           body: ${{ steps.tag_version.outputs.changelog }}
           makeLatest: ${{ !contains(steps.tag_version.outputs.release_type, 'pre') }}
           prerelease: ${{ contains(steps.tag_version.outputs.release_type, 'pre') }}
+  build-firmware:
+    name: Build Firmware
+    uses: esphome/workflows/.github/workflows/build.yml@2025.1.0
+    needs:
+      - release
+    with:
+      files: |
+        esphome/watering_system.yaml
+      esphome-version: 2025.3.2
+      combined-name: watering-system
+      release-summary: ${{ needs.release.outputs.releaseSummary }}
+      release-url: ${{ needs.release.outputs.releaseUrl }}
+      release-version: ${{ needs.release.outputs.tag }}
+  upload-to-release:
+    name: Upload to Release
+    uses: esphome/workflows/.github/workflows/upload-to-gh-release.yml@2025.1.0
+    needs:
+      - build-firmware
+      - release
+    with:
+      version: ${{ needs.release.outputs.tag }}
