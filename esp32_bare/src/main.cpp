@@ -9,7 +9,6 @@
 #include "analog_sensor.hpp"
 #include <WiFiProvisioner.h>
 #include <utils.hpp>
-#include "firebase.hpp"
 
 /*************************************************************
  * Definitions
@@ -103,7 +102,6 @@ lv_indev_t *buttonIndev = NULL;
 WiFiProvisioner::WiFiProvisioner wifiProvisioner;
 
 char *deviceUid = utils::getMacAddress();
-Firebase firebase;
 
 void setup()
 {

@@ -48,6 +48,17 @@ wifi:
 
 captive_portal:
 
+http_request:
+  verify_ssl: false
+
+ota:
+  - platform: http_request
+
+update:
+  - platform: http_request
+    name: Firmware Update
+    source: http://example.com/manifest.json
+
 time:
   - platform: homeassistant
     id: sntp_time
