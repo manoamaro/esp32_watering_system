@@ -4,7 +4,6 @@ packages:
     vars:
       id: ${id}
       pin: ${soil_sensor_pin}
-      update_interval: $update_soil_interval
 
 globals:
   - id: pump_${id}_last_run
@@ -16,27 +15,36 @@ globals:
     restore_value: no
     initial_value: 'false'
 
+time:
+  - id: !extend global_time
+    on_time_sync:
+      then:
+        - globals.set:
+            id: pump_${id}_last_run
+            value: !lambda 'return id(global_time).now().timestamp;'
+
 datetime:
-  - platform: template
-    id: pump_${id}_frequency
+  - id: pump_${id}_frequency
+    platform: template
     type: time
     name: "Pump ${id} Frequency"
     optimistic: yes
     initial_value: "01:00:00"
     restore_value: true
     entity_category: "config"
-  - platform: template
-    id: pump_${id}_next_run_time
+  - id: pump_${id}_next_run_time
+    platform: template
     type: time
+    internal: true
     update_interval: 1s
     set_action:
       then:
         - lambda: "return;"
     lambda: |-
-      if (!id(sntp_time).now().is_valid()) {
+      if (!id(global_time).now().is_valid() || id(pump_${id}_enabled).state == false) {
         return {};
       }
-      uint32_t now = id(sntp_time).now().timestamp;
+      uint32_t now = id(global_time).now().timestamp;
       uint32_t last_run = id(pump_${id}_last_run);
       int frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
       uint32_t next_run = last_run + frequency;
@@ -57,10 +65,9 @@ datetime:
                     time_format: "%T"
                     time: !lambda return x;
 
-
 number:
-  - platform: template
-    id: pump_${id}_power
+  - id: pump_${id}_power
+    platform: template
     name: "Pump ${id} Power"
     min_value: 0
     max_value: 100
@@ -70,10 +77,9 @@ number:
     optimistic: true
     restore_value: true
     device_class: "power_factor"
-    mode: "box"
     entity_category: "config"
-  - platform: template
-    id: pump_${id}_duration
+  - id: pump_${id}_duration
+    platform: template
     name: "Pump ${id} Duration"
     min_value: 0
     max_value: 3600
@@ -85,9 +91,9 @@ number:
     device_class: "duration"
     mode: "box"
     entity_category: "config"
-  - platform: template
-    id: pump_${id}_min_temperture
-    name: "Pump ${id} Mininum Temperture"
+  - id: pump_${id}_min_temperature
+    platform: template
+    name: "Pump ${id} Mininum Temperature"
     min_value: -20
     max_value: 50
     step: 1
@@ -98,8 +104,8 @@ number:
     device_class: "temperature"
     mode: "box"
     entity_category: "config"
-  - platform: template
-    id: pump_${id}_min_light
+  - id: pump_${id}_min_light
+    platform: template
     name: "Pump ${id} Mininum Light"
     min_value: 0
     max_value: 100
@@ -111,8 +117,8 @@ number:
     device_class: "illuminance"
     mode: "box"
     entity_category: "config"
-  - platform: template
-    id: pump_${id}_max_soil_moisture
+  - id: pump_${id}_max_soil_moisture
+    platform: template
     name: "Pump ${id} Maximum Soil Moisture"
     min_value: 0
     max_value: 100
@@ -169,24 +175,19 @@ switch:
 
 button:
   - platform: template
+    id: pump_${id}_run_button
     name: "Run Pump ${id}"
     on_press:
-      - lambda: |-
-          auto frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
-          auto duration = id(pump_${id}_duration).state;
-          auto now = id(sntp_time).now().timestamp;
-          auto last_run = id(pump_${id}_last_run);
-          id(pump_${id}_last_run) = now - frequency;
-          id(pump_${id}_force_run) = true;
+      - script.execute: force_run_pump_${id}
 
 binary_sensor:
-  - platform: template
-    id: pump_${id}_is_light
+  - id: pump_${id}_has_light
+    platform: template
     name: "Pump ${id} Light"
-    internal: true
+    device_class: "light"
     publish_initial_state: true
     lambda: |-
-      return id(pump_${id}_force_run) || id(pump_${id}_min_light).state < id(light_sensor).state;
+      return id(light_sensor).state >= id(pump_${id}_min_light).state;
     on_state:
       then:
         - if:
@@ -200,13 +201,13 @@ binary_sensor:
               - lvgl.image.update: 
                   id: img_pump_${id}_light
                   src: moon
-  - platform: template
-    id: pump_${id}_is_soil_moisture
-    name: "Pump ${id} Soil Moisture"
-    internal: true
+  - id: pump_${id}_is_soil_wet
+    platform: template
+    name: "Pump ${id} Soil"
+    device_class: "moisture"
     publish_initial_state: true
     lambda: |-
-      return id(pump_${id}_force_run) || id(pump_${id}_max_soil_moisture).state > id(soil_sensor_${id}).state;
+      return id(soil_sensor_${id}).state >= id(pump_${id}_max_soil_moisture).state;
     on_state:
       then:
         - if:
@@ -215,21 +216,29 @@ binary_sensor:
             then:
               - lvgl.image.update: 
                   id: img_pump_${id}_soil
-                  src: plant_dry
+                  src: plant_wet
             else:
               - lvgl.image.update: 
                   id: img_pump_${id}_soil
-                  src: plant_wet
-  - platform: template
-    id: pump_${id}_is_time
-    name: "Pump ${id} Time"
-    internal: true
+                  src: plant_dry
+  - id: pump_${id}_is_cold
+    platform: template
+    name: "Pump ${id} Temperature"
+    device_class: "cold"
     publish_initial_state: true
     lambda: |-
-      if (!id(sntp_time).now().is_valid()) {
+      return id(bme280_temperature).state < id(pump_${id}_min_temperature).state;
+  - id: pump_${id}_is_time
+    platform: template
+    name: "Pump ${id} Time"
+    device_class: "running"
+    entity_category: "diagnostic"
+    publish_initial_state: true
+    lambda: |-
+      if (!id(global_time).now().is_valid()) {
         return false;
       }
-      uint32_t now = id(sntp_time).now().timestamp;
+      uint32_t now = id(global_time).now().timestamp;
       uint32_t last_run = id(pump_${id}_last_run);
       int frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
       int duration = id(pump_${id}_duration).state;
@@ -244,15 +253,20 @@ binary_sensor:
       } else {
         return false;
       }
-  - platform: template
-    id: pump_${id}_is_running
+  - id: pump_${id}_is_running
+    platform: template
     name: "Pump ${id} is Running"
+    device_class: "running"
     condition:
       and:
         - switch.is_on: pump_${id}_enabled
-        - binary_sensor.is_on: pump_${id}_is_light
-        - binary_sensor.is_on: pump_${id}_is_soil_moisture
-        - binary_sensor.is_on: pump_${id}_is_time
+        - or:
+            - lambda: 'return id(pump_${id}_force_run);'
+            - and:
+                - binary_sensor.is_off: pump_${id}_is_soil_wet
+                - binary_sensor.is_on: pump_${id}_has_light
+                - binary_sensor.is_off: pump_${id}_is_cold
+                - binary_sensor.is_on: pump_${id}_is_time
     publish_initial_state: true
     on_state:
       then:
@@ -263,3 +277,92 @@ binary_sensor:
               - switch.turn_on: pump_${id}_sw
             else:
               - switch.turn_off: pump_${id}_sw
+
+script:
+  - id: force_run_pump_${id}
+    mode: restart
+    then:
+      - lambda: |-
+          auto frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
+          auto duration = id(pump_${id}_duration).state;
+          auto now = id(global_time).now().timestamp;
+          auto last_run = id(pump_${id}_last_run);
+          id(pump_${id}_last_run) = now - frequency;
+          id(pump_${id}_force_run) = true;
+
+lvgl:
+  pages:
+    - id: !extend main_page
+      widgets:
+        - !include
+            file: ui/pump_info_component.yaml
+            vars:
+              id: ${id}
+    - id: pump_${id}_page
+      styles: page
+      layout:
+        type: FLEX
+        flex_flow: COLUMN
+        flex_align_main: START
+        flex_align_cross: CENTER
+        flex_align_track: CENTER
+      widgets:
+        - label:
+            text: "Pump ${id} Settings"
+            width: 100%
+            height: SIZE_CONTENT
+            text_align: CENTER
+        - obj:
+            width: 100%
+            height: 42
+            layout:
+              type: FLEX
+              flex_flow: ROW
+              flex_align_main: SPACE_BETWEEN
+              flex_align_cross: CENTER
+              flex_align_track: CENTER
+            widgets:
+              - label:
+                  text: "Enabled"
+              - switch:
+                  group: main_group
+                  on_click:
+                    then:
+                      - lambda: |-
+                          id(pump_${id}_enabled).publish_state(x);
+        - !include
+            file: ui/_spinner.yaml
+            vars:
+              id: pump_${id}_spinner
+              name: "Freq. (sec)"
+              min: 10
+              max: 86400
+              step: 10
+              digits: 5
+        - !include
+            file: ui/_spinner.yaml
+            vars:
+              id: pump_${id}_spinner
+              name: "Dur. (sec)"
+              min: 10
+              max: 3600
+              step: 5
+              digits: 4
+        - !include
+            file: ui/_spinner.yaml
+            vars:
+              id: pump_${id}_spinner
+              name: "Min Temp."
+              min: -10
+              max: 60
+              step: 1
+              digits: 2
+        - !include
+            file: ui/_spinner.yaml
+            vars:
+              id: pump_${id}_spinner
+              name: "Max Soil"
+              min: 0
+              max: 100
+              step: 1
+              digits: 3

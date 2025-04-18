@@ -1,0 +1,22 @@
+---
+obj:
+  width: 100%
+  height: 44
+  layout:
+    type: FLEX
+    flex_flow: ROW
+    flex_align_main: SPACE_BETWEEN
+    flex_align_cross: CENTER
+    flex_align_track: CENTER
+  widgets:
+    - label:
+        text: "${name}"
+    - spinbox:
+        text_align: center
+        width: 60
+        group: main_group
+        range_from: $min
+        range_to: $max
+        step: $step
+        digits: $digits
+        decimal_places: 0

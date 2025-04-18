@@ -11,14 +11,14 @@ globals:
 button:
   - platform: template
     id: soil_sensor_${id}_set_dry
-    name: "Set Dry Value ${id}"
+    name: "Sensor ${id} Dry"
     entity_category: "config"
     on_press:
       - lambda: |-
           id(soil_sensor_${id}_dry) = id(soil_sensor_${id}_raw).state;
   - platform: template
     id: soil_sensor_${id}_set_wet
-    name: "Set Wet Value ${id}"
+    name: "Sensor ${id} Wet"
     entity_category: "config"
     on_press:
       - lambda: |-
@@ -29,10 +29,15 @@ sensor:
     device_class: voltage
     pin: $pin
     name: "Soil Sensor ${id} raw"
-    update_interval: $update_interval
+    update_interval: $update_sensors_interval
     entity_category: "diagnostic"
     state_class: "measurement"
-    attenuation: auto
+    attenuation: 12db
+    filters:
+      - round: 2
+      - sliding_window_moving_average:
+          window_size: 15
+          send_every: 15
     on_value:
       then:
         - sensor.template.publish:
@@ -43,7 +48,7 @@ sensor:
     device_class: moisture
     name: "Soil Sensor ${id}"
     update_interval: never
-    accuracy_decimals: 2
+    accuracy_decimals: 1
     unit_of_measurement: '%'
     state_class: "measurement"
     filters:

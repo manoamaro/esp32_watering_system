@@ -1,30 +1,31 @@
 substitutions:
-  update_soil_interval: 1s
+  update_sensors_interval: 1s
 
 packages:
   lvgl: !include internal/ui/lvgl.yaml
   pump0: !include
     file: internal/pump.yaml
     vars:
-      id: 0
+      id: 1
       pin: GPIO12
       soil_sensor_pin: GPIO39
   pump1: !include
     file: internal/pump.yaml
     vars:
-      id: 1
+      id: 2
       pin: GPIO4
       soil_sensor_pin: GPIO34
   pump2: !include
     file: internal/pump.yaml
     vars:
-      id: 2
+      id: 3
       pin: GPIO14
       soil_sensor_pin: GPIO35
 
 esphome:
-  name: watering_system
+  name: wateringsystem
   friendly_name: Watering System
+  min_version: 2025.3.3
 
 esp32:
   board: esp32dev
@@ -37,12 +38,10 @@ logger:
 
 # Enable Home Assistant API
 api:
-  reboot_timeout: 0s
 
 wifi:
   ssid: "CyMano"  
   password: "@CyMano1234@"
-  reboot_timeout: 0s
   ap:
     ssid: "Watering System"
 
@@ -53,6 +52,9 @@ http_request:
 
 ota:
   - platform: http_request
+  - platform: esphome
+
+mdns:
 
 update:
   - platform: http_request
@@ -61,18 +63,7 @@ update:
 
 time:
   - platform: homeassistant
-    id: sntp_time
-    on_time_sync:
-      then:
-        - globals.set:
-            id: pump_0_last_run
-            value: !lambda 'return id(sntp_time).now().timestamp;'
-        - globals.set:
-            id: pump_1_last_run
-            value: !lambda 'return id(sntp_time).now().timestamp;'
-        - globals.set:
-            id: pump_2_last_run
-            value: !lambda 'return id(sntp_time).now().timestamp;'
+    id: global_time
 
 i2c:
   sda: 21
@@ -88,69 +79,58 @@ sensor:
   - platform: bme280_i2c
     id: bme280_sensor
     address: 0x76
+    update_interval: $update_sensors_interval
     temperature:
       id: bme280_temperature
       name: "Temperature"
-      internal: true
+      filters:
+        - round: 2
+        - sliding_window_moving_average:
+            window_size: 5
+            send_every: 5
     pressure:
       id: bme280_pressure
       name: "Pressure"
+      filters:
+        - round: 2
+        - sliding_window_moving_average:
+            window_size: 5
+            send_every: 5
     humidity:
       id: bme280_humidity
       name: "Humidity"
-      internal: true
-    update_interval: 5s
+      filters:
+        - round: 2
+        - sliding_window_moving_average:
+            window_size: 5
+            send_every: 5
   - platform: absolute_humidity
     id: abs_humidity
     name: "Absolute Humidity"
-    internal: true
     temperature: bme280_temperature
     humidity: bme280_humidity
-  - platform: template
-    id: temperature
-    name: "Temperature"
-    update_interval: 5s
-    device_class: temperature
-    unit_of_measurement: '°C'
-    state_class: "measurement"
-    lambda: |-
-      return id(bme280_temperature).state - 6.0;
-    on_value:
-      then:
-        - lvgl.label.update:
-            id: lbl_temperature
-            text:
-              format: "%.1f°C"
-              args: [x]
-  - platform: template
-    id: relative_humidity
-    name: "Relative Humidity"
-    update_interval: 15s
-    device_class: humidity
-    lambda: |-
-      return id(abs_humidity).state / (6.112 * expf((17.67 * id(temperature).state) / (id(temperature).state + 243.5)) * 2.1674);
-    on_value:
-      then:
-        - lvgl.label.update:
-            id: lbl_humidity
-            text:
-              format: "%.1f%%"
-              args: [x]
+    filters:
+      - round: 2
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 5
   - platform: adc
     id: light_sensor
-    device_class: illuminance
     pin: GPIO36
     name: "Light Sensor"
-    update_interval: 1s
-    attenuation: auto
+    update_interval: $update_sensors_interval
+    attenuation: 12db
     unit_of_measurement: "%"
     filters:
-      - quantile:
+      - round: 2
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 5
       - calibrate_linear:
           method: exact
           datapoints:
-            - 0.65 -> 0.0
-            - 3.15 -> 100.0
+            - 0.0 -> 0.0
+            - 3.3 -> 100.0
       - clamp:
           min_value: 0
           max_value: 100

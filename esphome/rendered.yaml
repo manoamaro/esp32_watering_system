@@ -1,0 +1,2607 @@
+substitutions:
+  update_soil_interval: 1s
+esphome:
+  name: watering_system
+  friendly_name: Watering System
+  min_version: 2025.2.2
+  build_path: build/watering_system
+  area: ''
+  platformio_options: {}
+  includes: []
+  libraries: []
+  name_add_mac_suffix: false
+esp32:
+  board: esp32dev
+  framework:
+    version: 2.0.5
+    advanced:
+      ignore_efuse_custom_mac: false
+    source: ~3.20005.0
+    platform_version: platformio/espressif32@5.4.0
+    type: arduino
+  flash_size: 4MB
+  variant: ESP32
+display:
+- platform: ili9xxx
+  id: my_display
+  model: ST7789V
+  dc_pin:
+    number: 33
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  cs_pin:
+    number: 5
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  reset_pin:
+    number: 26
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  dimensions:
+  - 240
+  - 240
+  rotation: 270
+  invert_colors: true
+  auto_clear_enabled: false
+  update_interval: 4294967295
+  color_palette: NONE
+  color_palette_images: []
+  data_rate: 40000000.0
+image:
+- file: /Users/manoel/Developer/esp32_watering_system/esphome/assets/temperature_512.png
+  type: RGB565
+  id: thermometer
+  resize:
+  - 24
+  - 24
+  transparency: alpha_channel
+  dither: NONE
+  invert_alpha: false
+- file: /Users/manoel/Developer/esp32_watering_system/esphome/assets/humidity_512.png
+  type: RGB565
+  id: water_percent
+  resize:
+  - 24
+  - 24
+  transparency: alpha_channel
+  dither: NONE
+  invert_alpha: false
+- file: /Users/manoel/Developer/esp32_watering_system/esphome/assets/plant_bad_512.png
+  type: RGB565
+  id: plant_dry
+  resize:
+  - 24
+  - 24
+  transparency: alpha_channel
+  dither: NONE
+  invert_alpha: false
+- file: /Users/manoel/Developer/esp32_watering_system/esphome/assets/plant_good_512.png
+  type: RGB565
+  id: plant_wet
+  resize:
+  - 24
+  - 24
+  transparency: alpha_channel
+  dither: NONE
+  invert_alpha: false
+- file: /Users/manoel/Developer/esp32_watering_system/esphome/assets/sun_512.png
+  type: RGB565
+  id: sun
+  resize:
+  - 24
+  - 24
+  transparency: alpha_channel
+  dither: NONE
+  invert_alpha: false
+- file: /Users/manoel/Developer/esp32_watering_system/esphome/assets/moon_32.png
+  type: RGB565
+  id: moon
+  resize:
+  - 24
+  - 24
+  transparency: alpha_channel
+  dither: NONE
+  invert_alpha: false
+font:
+- file:
+    path: /Users/manoel/Developer/esp32_watering_system/esphome/fonts/materialdesignicons-webfont.ttf
+    type: local
+  id: icons_42
+  size: 42
+  bpp: 4
+  glyphs:
+  - 󰖔
+  - 󰖐
+  - 󰼯
+  - 󰖑
+  - 󰖒
+  - 󰖓
+  - 󰙾
+  - 󰖕
+  - 󰖖
+  - 󰖗
+  - 󰖘
+  - 󰙿
+  - 󰖙
+  - 󰖝
+  - 󰖞
+  - 󱓤
+  - 󰔏
+  - 󰖎
+  - 󱁠
+  - 󰖌
+  - 󰖍
+  glyphsets: []
+  ignore_missing_glyphs: false
+  extras: []
+- file:
+    path: /Users/manoel/Developer/esp32_watering_system/esphome/fonts/materialdesignicons-webfont.ttf
+    type: local
+  id: icons_24
+  size: 24
+  bpp: 4
+  glyphs:
+  - 󰖔
+  - 󰖐
+  - 󰼯
+  - 󰖑
+  - 󰖒
+  - 󰖓
+  - 󰙾
+  - 󰖕
+  - 󰖖
+  - 󰖗
+  - 󰖘
+  - 󰙿
+  - 󰖙
+  - 󰖝
+  - 󰖞
+  - 󱓤
+  - 󰔏
+  - 󰖎
+  - 󱁠
+  - 󰖌
+  - 󰖍
+  glyphsets: []
+  ignore_missing_glyphs: false
+  extras: []
+binary_sensor:
+- platform: gpio
+  id: left_button
+  pin:
+    number: 13
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+      output: false
+      open_drain: false
+      pulldown: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  filters:
+  - delayed_on: 10ms
+  on_state:
+  - then:
+    - lvgl.button.update:
+        id:
+        - id: btn_left
+        state:
+          pressed: !lambda |-
+            return x;
+  disabled_by_default: false
+  name: left_button
+  internal: true
+- platform: gpio
+  id: middle_button
+  pin:
+    number: 15
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+      output: false
+      open_drain: false
+      pulldown: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  filters:
+  - delayed_on: 10ms
+  on_state:
+  - then:
+    - lvgl.button.update:
+        id:
+        - id: btn_middle
+        state:
+          pressed: !lambda |-
+            return x;
+  disabled_by_default: false
+  name: middle_button
+  internal: true
+- platform: gpio
+  id: right_button
+  pin:
+    number: 17
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+      output: false
+      open_drain: false
+      pulldown: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  filters:
+  - delayed_on: 10ms
+  on_state:
+  - then:
+    - lvgl.button.update:
+        id:
+        - id: btn_right
+        state:
+          pressed: !lambda |-
+            return x;
+  disabled_by_default: false
+  name: right_button
+  internal: true
+- platform: template
+  id: pump_1_has_light
+  name: Pump 1 Light
+  device_class: light
+  entity_category: diagnostic
+  publish_initial_state: true
+  lambda: !lambda |-
+    return id(light_sensor).state >= id(pump_1_min_light).state;
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_1_light
+            src: sun
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        else:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_1_light
+            src: moon
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+  disabled_by_default: false
+- platform: template
+  id: pump_1_is_soil_dry
+  name: Pump 1 Soil
+  device_class: moisture
+  publish_initial_state: true
+  lambda: !lambda |-
+    return id(soil_sensor_1).state < id(pump_1_max_soil_moisture).state;
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_1_soil
+            src: plant_dry
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        else:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_1_soil
+            src: plant_wet
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+  disabled_by_default: false
+- platform: template
+  id: pump_1_is_time
+  name: Pump 1 Time
+  device_class: running
+  entity_category: diagnostic
+  publish_initial_state: true
+  lambda: !lambda |-
+    if (!id(global_time).now().is_valid()) {
+      return false;
+    }
+    uint32_t now = id(global_time).now().timestamp;
+    uint32_t last_run = id(pump_1_last_run);
+    int frequency = id(pump_1_frequency).hour * 3600 + id(pump_1_frequency).minute * 60 + id(pump_1_frequency).second;
+    int duration = id(pump_1_duration).state;
+    uint32_t next_run = last_run + frequency;
+    uint32_t end_run = next_run + duration;
+    if (now >= next_run && now <= end_run) {
+      return true;
+    } else if (now > end_run) {
+      id(pump_1_last_run) = now;
+      id(pump_1_force_run) = false;
+      return false;
+    } else {
+      return false;
+    }
+  disabled_by_default: false
+- platform: template
+  id: pump_1_is_running
+  name: Pump 1 is Running
+  device_class: running
+  condition:
+    and:
+    - switch.is_on:
+        id: pump_1_enabled
+    - or:
+      - lambda: !lambda |-
+          return id(pump_1_force_run);
+      - and:
+        - binary_sensor.is_on:
+            id: pump_1_is_soil_dry
+        - binary_sensor.is_on:
+            id: pump_1_has_light
+        - binary_sensor.is_on:
+            id: pump_1_is_time
+  publish_initial_state: true
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - switch.turn_on:
+            id: pump_1_sw
+        else:
+        - switch.turn_off:
+            id: pump_1_sw
+  disabled_by_default: false
+- platform: template
+  id: pump_2_has_light
+  name: Pump 2 Light
+  device_class: light
+  entity_category: diagnostic
+  publish_initial_state: true
+  lambda: !lambda |-
+    return id(light_sensor).state >= id(pump_2_min_light).state;
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_2_light
+            src: sun
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        else:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_2_light
+            src: moon
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+  disabled_by_default: false
+- platform: template
+  id: pump_2_is_soil_dry
+  name: Pump 2 Soil
+  device_class: moisture
+  publish_initial_state: true
+  lambda: !lambda |-
+    return id(soil_sensor_2).state < id(pump_2_max_soil_moisture).state;
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_2_soil
+            src: plant_dry
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        else:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_2_soil
+            src: plant_wet
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+  disabled_by_default: false
+- platform: template
+  id: pump_2_is_time
+  name: Pump 2 Time
+  device_class: running
+  entity_category: diagnostic
+  publish_initial_state: true
+  lambda: !lambda |-
+    if (!id(global_time).now().is_valid()) {
+      return false;
+    }
+    uint32_t now = id(global_time).now().timestamp;
+    uint32_t last_run = id(pump_2_last_run);
+    int frequency = id(pump_2_frequency).hour * 3600 + id(pump_2_frequency).minute * 60 + id(pump_2_frequency).second;
+    int duration = id(pump_2_duration).state;
+    uint32_t next_run = last_run + frequency;
+    uint32_t end_run = next_run + duration;
+    if (now >= next_run && now <= end_run) {
+      return true;
+    } else if (now > end_run) {
+      id(pump_2_last_run) = now;
+      id(pump_2_force_run) = false;
+      return false;
+    } else {
+      return false;
+    }
+  disabled_by_default: false
+- platform: template
+  id: pump_2_is_running
+  name: Pump 2 is Running
+  device_class: running
+  condition:
+    and:
+    - switch.is_on:
+        id: pump_2_enabled
+    - or:
+      - lambda: !lambda |-
+          return id(pump_2_force_run);
+      - and:
+        - binary_sensor.is_on:
+            id: pump_2_is_soil_dry
+        - binary_sensor.is_on:
+            id: pump_2_has_light
+        - binary_sensor.is_on:
+            id: pump_2_is_time
+  publish_initial_state: true
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - switch.turn_on:
+            id: pump_2_sw
+        else:
+        - switch.turn_off:
+            id: pump_2_sw
+  disabled_by_default: false
+- platform: template
+  id: pump_3_has_light
+  name: Pump 3 Light
+  device_class: light
+  entity_category: diagnostic
+  publish_initial_state: true
+  lambda: !lambda |-
+    return id(light_sensor).state >= id(pump_3_min_light).state;
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_3_light
+            src: sun
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        else:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_3_light
+            src: moon
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+  disabled_by_default: false
+- platform: template
+  id: pump_3_is_soil_dry
+  name: Pump 3 Soil
+  device_class: moisture
+  publish_initial_state: true
+  lambda: !lambda |-
+    return id(soil_sensor_3).state < id(pump_3_max_soil_moisture).state;
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_3_soil
+            src: plant_dry
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        else:
+        - lvgl.image.update:
+            id:
+            - id: img_pump_3_soil
+            src: plant_wet
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+  disabled_by_default: false
+- platform: template
+  id: pump_3_is_time
+  name: Pump 3 Time
+  device_class: running
+  entity_category: diagnostic
+  publish_initial_state: true
+  lambda: !lambda |-
+    if (!id(global_time).now().is_valid()) {
+      return false;
+    }
+    uint32_t now = id(global_time).now().timestamp;
+    uint32_t last_run = id(pump_3_last_run);
+    int frequency = id(pump_3_frequency).hour * 3600 + id(pump_3_frequency).minute * 60 + id(pump_3_frequency).second;
+    int duration = id(pump_3_duration).state;
+    uint32_t next_run = last_run + frequency;
+    uint32_t end_run = next_run + duration;
+    if (now >= next_run && now <= end_run) {
+      return true;
+    } else if (now > end_run) {
+      id(pump_3_last_run) = now;
+      id(pump_3_force_run) = false;
+      return false;
+    } else {
+      return false;
+    }
+  disabled_by_default: false
+- platform: template
+  id: pump_3_is_running
+  name: Pump 3 is Running
+  device_class: running
+  condition:
+    and:
+    - switch.is_on:
+        id: pump_3_enabled
+    - or:
+      - lambda: !lambda |-
+          return id(pump_3_force_run);
+      - and:
+        - binary_sensor.is_on:
+            id: pump_3_is_soil_dry
+        - binary_sensor.is_on:
+            id: pump_3_has_light
+        - binary_sensor.is_on:
+            id: pump_3_is_time
+  publish_initial_state: true
+  on_state:
+  - then:
+    - if:
+        condition:
+          lambda: !lambda |-
+            return x;
+        then:
+        - switch.turn_on:
+            id: pump_3_sw
+        else:
+        - switch.turn_off:
+            id: pump_3_sw
+  disabled_by_default: false
+output:
+- platform: ledc
+  pin:
+    number: 27
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  id: lcd_backlight_output
+  frequency: 5000.0
+  zero_means_zero: false
+- platform: ledc
+  id: pump_1_output
+  pin:
+    number: 12
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  frequency: 5000.0
+  min_power: 0.0
+  max_power: 1.0
+  zero_means_zero: false
+- platform: ledc
+  id: pump_2_output
+  pin:
+    number: 4
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  frequency: 5000.0
+  min_power: 0.0
+  max_power: 1.0
+  zero_means_zero: false
+- platform: ledc
+  id: pump_3_output
+  pin:
+    number: 14
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  frequency: 5000.0
+  min_power: 0.0
+  max_power: 1.0
+  zero_means_zero: false
+light:
+- platform: monochromatic
+  id: lcd_backlight
+  internal: true
+  name: LCD Backlight
+  output: lcd_backlight_output
+  restore_mode: ALWAYS_ON
+  initial_state:
+    state: true
+    brightness: 0.65
+  disabled_by_default: false
+  gamma_correct: 2.8
+  default_transition_length: 1s
+  flash_transition_length: 0s
+lvgl:
+- displays:
+  - my_display
+  buffer_size: 0.25
+  on_idle:
+  - timeout: 30s
+    then:
+    - lvgl.page.show:
+        id: main_page
+        animation: LV_SCR_LOAD_ANIM_NONE
+        time: 50ms
+  - timeout: 120s
+    then:
+    - light.turn_off:
+        id: lcd_backlight
+        state: false
+    - lvgl.pause:
+        show_snow: false
+  on_resume:
+  - then:
+    - light.turn_on:
+        id: lcd_backlight
+        state: true
+  encoders:
+  - id: encoder
+    group: main_group
+    enter_button: middle_button
+    sensor:
+      left_button: left_button
+      right_button: right_button
+    long_press_time: 400ms
+    long_press_repeat_time: 100ms
+  theme:
+    button:
+      bg_color: 3116248
+      bg_grad_color: 22402
+      bg_grad_dir: LV_GRAD_DIR_VER
+      bg_opa: LV_OPA_COVER
+      border_color: 30643
+      border_width: 1
+      text_color: 16777215
+      pressed:
+        bg_color: 26265
+        bg_grad_color: 13133
+      checked:
+        bg_color: 1925014
+        bg_grad_color: 209482
+        text_color: 16773888
+    buttonmatrix:
+      bg_opa: LV_OPA_TRANSP
+      border_color: 30643
+      border_width: 0
+      text_color: 16777215
+      pad_all: 0
+      items:
+        bg_color: 3116248
+        bg_grad_color: 22402
+        bg_grad_dir: LV_GRAD_DIR_VER
+        bg_opa: LV_OPA_COVER
+        border_color: 30643
+        border_width: 1
+        text_color: 16777215
+        pressed:
+          bg_color: 26265
+          bg_grad_color: 13133
+        checked:
+          bg_color: 1925014
+          bg_grad_color: 209482
+          text_color: 21888
+    switch:
+      bg_color: 12632256
+      bg_grad_color: 11579568
+      bg_grad_dir: LV_GRAD_DIR_VER
+      bg_opa: LV_OPA_COVER
+      checked:
+        bg_color: 1925014
+        bg_grad_color: 209482
+        bg_grad_dir: LV_GRAD_DIR_VER
+        bg_opa: LV_OPA_COVER
+      knob:
+        bg_color: 16777215
+        bg_grad_color: 12632256
+        bg_grad_dir: LV_GRAD_DIR_VER
+        bg_opa: LV_OPA_COVER
+    slider:
+      border_width: 1
+      border_opa: 38
+      bg_color: 13421258
+      bg_opa: 38
+      indicator:
+        bg_color: 1925014
+        bg_grad_color: 209482
+        bg_grad_dir: LV_GRAD_DIR_VER
+        bg_opa: LV_OPA_COVER
+      knob:
+        bg_color: 3116248
+        bg_grad_color: 22402
+        bg_grad_dir: LV_GRAD_DIR_VER
+        bg_opa: LV_OPA_COVER
+        border_color: 30643
+        border_width: 1
+        text_color: 16777215
+  style_definitions:
+  - id: clean
+    bg_opa: LV_OPA_TRANSP
+    border_opa: LV_OPA_TRANSP
+    border_width: 0
+    border_color: 0
+    radius: 0
+    pad_all: 0
+    scrollbar_mode: LV_SCROLLBAR_MODE_OFF
+  - id: header_footer
+    bg_color: 3116248
+    bg_grad_color: 22402
+    bg_grad_dir: LV_GRAD_DIR_VER
+    bg_opa: LV_OPA_COVER
+    border_opa: LV_OPA_TRANSP
+    radius: 0
+    pad_all: 0
+    pad_row: 0
+    pad_column: 0
+    border_color: 30643
+    text_color: 16777215
+    width: lv_pct(100)
+    height: 36
+    scrollbar_mode: LV_SCROLLBAR_MODE_OFF
+  - id: page
+    width: lv_pct(100)
+    height: lv_pct(100)
+    pad_top: 36
+    pad_bottom: 36
+  - id: pump_info
+    height: 52
+    scrollbar_mode: LV_SCROLLBAR_MODE_OFF
+    width: lv_pct(100)
+  - id: pump_info_disabled
+    bg_color: 0
+    bg_opa: 127
+  top_layer:
+    widgets:
+    - obj:
+        styles:
+        - header_footer
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_EVENLY
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - image:
+            width: 24
+            height: 24
+            src: thermometer
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - label:
+            id: lbl_temperature
+            text: ''
+        - image:
+            width: 24
+            height: 24
+            src: water_percent
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - label:
+            id: lbl_humidity
+            text: ''
+        - label:
+            text: 
+            id: lbl_wifi
+            hidden: true
+    - obj:
+        align: LV_ALIGN_BOTTOM_MID
+        styles:
+        - header_footer
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_EVENLY
+          flex_align_cross: LV_FLEX_ALIGN_SPACE_EVENLY
+          flex_align_track: LV_FLEX_ALIGN_SPACE_EVENLY
+          type: flex
+        widgets:
+        - button:
+            id: btn_left
+            width: lv_pct(33)
+            styles:
+            - header_footer
+            widgets:
+            - label:
+                text: 
+                align: LV_ALIGN_CENTER
+                text_align: LV_TEXT_ALIGN_CENTER
+        - button:
+            id: btn_middle
+            width: lv_pct(34)
+            styles:
+            - header_footer
+            widgets:
+            - label:
+                text: 
+                align: LV_ALIGN_CENTER
+                text_align: LV_TEXT_ALIGN_CENTER
+        - button:
+            id: btn_right
+            width: lv_pct(33)
+            styles:
+            - header_footer
+            widgets:
+            - label:
+                text: 
+                align: LV_ALIGN_CENTER
+                text_align: LV_TEXT_ALIGN_CENTER
+  pages:
+  - id: main_page
+    styles:
+    - page
+    scrollbar_mode: LV_SCROLLBAR_MODE_OFF
+    layout:
+      flex_flow: LV_FLEX_FLOW_COLUMN
+      flex_align_main: LV_FLEX_ALIGN_SPACE_AROUND
+      flex_align_cross: LV_FLEX_ALIGN_CENTER
+      flex_align_track: LV_FLEX_ALIGN_CENTER
+      type: flex
+    widgets:
+    - obj:
+        id: obj_pump_1_info
+        styles:
+        - pump_info
+        group: main_group
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_START
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        click_focusable: false
+        clickable: true
+        scrollable: false
+        focused:
+          border_color: 255
+          border_width: 2
+        on_click:
+        - then:
+          - globals.set:
+              id: pump_1_last_run
+              value: !lambda |-
+                return id(global_time).now().timestamp;
+        on_long_press:
+        - then:
+          - lvgl.page.show:
+              id: pump_1_page
+              animation: LV_SCR_LOAD_ANIM_NONE
+              time: 50ms
+        widgets:
+        - label:
+            id: lbl_pump_1
+            text_font: icons_24
+            text: 󱁠
+            text_color: 255
+            pad_left: 5
+            disabled:
+              text_color: 16711680
+        - image:
+            id: img_pump_1_light
+            pad_left: 5
+            src: sun
+            disabled:
+              image_recolor: 0
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - image:
+            id: img_pump_1_soil
+            pad_left: 5
+            src: plant_dry
+            disabled:
+              image_recolor: 0
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - label:
+            id: lbl_pump_1_next
+            pad_left: 5
+            text: 00:00:00
+        - spinner:
+            id: spinner_pump_1
+            spin_time: 2s
+            arc_length: 600
+            arc_width: 4
+            width: 24
+            height: 24
+            indicator:
+              arc_width: 4
+    - obj:
+        id: obj_pump_2_info
+        styles:
+        - pump_info
+        group: main_group
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_START
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        click_focusable: false
+        clickable: true
+        scrollable: false
+        focused:
+          border_color: 255
+          border_width: 2
+        on_click:
+        - then:
+          - globals.set:
+              id: pump_2_last_run
+              value: !lambda |-
+                return id(global_time).now().timestamp;
+        on_long_press:
+        - then:
+          - lvgl.page.show:
+              id: pump_2_page
+              animation: LV_SCR_LOAD_ANIM_NONE
+              time: 50ms
+        widgets:
+        - label:
+            id: lbl_pump_2
+            text_font: icons_24
+            text: 󱁠
+            text_color: 255
+            pad_left: 5
+            disabled:
+              text_color: 16711680
+        - image:
+            id: img_pump_2_light
+            pad_left: 5
+            src: sun
+            disabled:
+              image_recolor: 0
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - image:
+            id: img_pump_2_soil
+            pad_left: 5
+            src: plant_dry
+            disabled:
+              image_recolor: 0
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - label:
+            id: lbl_pump_2_next
+            pad_left: 5
+            text: 00:00:00
+        - spinner:
+            id: spinner_pump_2
+            spin_time: 2s
+            arc_length: 600
+            arc_width: 4
+            width: 24
+            height: 24
+            indicator:
+              arc_width: 4
+    - obj:
+        id: obj_pump_3_info
+        styles:
+        - pump_info
+        group: main_group
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_START
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        click_focusable: false
+        clickable: true
+        scrollable: false
+        focused:
+          border_color: 255
+          border_width: 2
+        on_click:
+        - then:
+          - globals.set:
+              id: pump_3_last_run
+              value: !lambda |-
+                return id(global_time).now().timestamp;
+        on_long_press:
+        - then:
+          - lvgl.page.show:
+              id: pump_3_page
+              animation: LV_SCR_LOAD_ANIM_NONE
+              time: 50ms
+        widgets:
+        - label:
+            id: lbl_pump_3
+            text_font: icons_24
+            text: 󱁠
+            text_color: 255
+            pad_left: 5
+            disabled:
+              text_color: 16711680
+        - image:
+            id: img_pump_3_light
+            pad_left: 5
+            src: sun
+            disabled:
+              image_recolor: 0
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - image:
+            id: img_pump_3_soil
+            pad_left: 5
+            src: plant_dry
+            disabled:
+              image_recolor: 0
+            pivot_x: lv_pct(50)
+            pivot_y: lv_pct(50)
+        - label:
+            id: lbl_pump_3_next
+            pad_left: 5
+            text: 00:00:00
+        - spinner:
+            id: spinner_pump_3
+            spin_time: 2s
+            arc_length: 600
+            arc_width: 4
+            width: 24
+            height: 24
+            indicator:
+              arc_width: 4
+    skip: false
+  - id: pump_1_page
+    styles:
+    - page
+    layout:
+      flex_flow: LV_FLEX_FLOW_COLUMN
+      flex_align_main: LV_FLEX_ALIGN_START
+      flex_align_cross: LV_FLEX_ALIGN_CENTER
+      flex_align_track: LV_FLEX_ALIGN_CENTER
+      type: flex
+    widgets:
+    - label:
+        text: Pump 1 Settings
+        width: lv_pct(100)
+        height: LV_SIZE_CONTENT
+        text_align: LV_TEXT_ALIGN_CENTER
+    - obj:
+        width: lv_pct(100)
+        height: 42
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Enabled
+        - switch:
+            group: main_group
+            on_click:
+            - then:
+              - lambda: !lambda |-
+                  id(pump_1_enabled).publish_state(x);
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Freq. (sec)
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 10.0
+            range_to: 86400.0
+            step: 10.0
+            digits: 5
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Dur. (sec)
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 10.0
+            range_to: 3600.0
+            step: 5.0
+            digits: 4
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Min Temp.
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: -10.0
+            range_to: 60.0
+            step: 1.0
+            digits: 2
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Max Soil
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 0.0
+            range_to: 100.0
+            step: 1.0
+            digits: 3
+            decimal_places: 0
+            rollover: false
+    skip: false
+  - id: pump_2_page
+    styles:
+    - page
+    layout:
+      flex_flow: LV_FLEX_FLOW_COLUMN
+      flex_align_main: LV_FLEX_ALIGN_START
+      flex_align_cross: LV_FLEX_ALIGN_CENTER
+      flex_align_track: LV_FLEX_ALIGN_CENTER
+      type: flex
+    widgets:
+    - label:
+        text: Pump 2 Settings
+        width: lv_pct(100)
+        height: LV_SIZE_CONTENT
+        text_align: LV_TEXT_ALIGN_CENTER
+    - obj:
+        width: lv_pct(100)
+        height: 42
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Enabled
+        - switch:
+            group: main_group
+            on_click:
+            - then:
+              - lambda: !lambda |-
+                  id(pump_2_enabled).publish_state(x);
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Freq. (sec)
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 10.0
+            range_to: 86400.0
+            step: 10.0
+            digits: 5
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Dur. (sec)
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 10.0
+            range_to: 3600.0
+            step: 5.0
+            digits: 4
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Min Temp.
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: -10.0
+            range_to: 60.0
+            step: 1.0
+            digits: 2
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Max Soil
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 0.0
+            range_to: 100.0
+            step: 1.0
+            digits: 3
+            decimal_places: 0
+            rollover: false
+    skip: false
+  - id: pump_3_page
+    styles:
+    - page
+    layout:
+      flex_flow: LV_FLEX_FLOW_COLUMN
+      flex_align_main: LV_FLEX_ALIGN_START
+      flex_align_cross: LV_FLEX_ALIGN_CENTER
+      flex_align_track: LV_FLEX_ALIGN_CENTER
+      type: flex
+    widgets:
+    - label:
+        text: Pump 3 Settings
+        width: lv_pct(100)
+        height: LV_SIZE_CONTENT
+        text_align: LV_TEXT_ALIGN_CENTER
+    - obj:
+        width: lv_pct(100)
+        height: 42
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Enabled
+        - switch:
+            group: main_group
+            on_click:
+            - then:
+              - lambda: !lambda |-
+                  id(pump_3_enabled).publish_state(x);
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Freq. (sec)
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 10.0
+            range_to: 86400.0
+            step: 10.0
+            digits: 5
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Dur. (sec)
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 10.0
+            range_to: 3600.0
+            step: 5.0
+            digits: 4
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Min Temp.
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: -10.0
+            range_to: 60.0
+            step: 1.0
+            digits: 2
+            decimal_places: 0
+            rollover: false
+    - obj:
+        width: lv_pct(100)
+        height: 44
+        layout:
+          flex_flow: LV_FLEX_FLOW_ROW
+          flex_align_main: LV_FLEX_ALIGN_SPACE_BETWEEN
+          flex_align_cross: LV_FLEX_ALIGN_CENTER
+          flex_align_track: LV_FLEX_ALIGN_CENTER
+          type: flex
+        widgets:
+        - label:
+            text: Max Soil
+        - spinbox:
+            text_align: LV_TEXT_ALIGN_CENTER
+            width: 60
+            group: main_group
+            range_from: 0.0
+            range_to: 100.0
+            step: 1.0
+            digits: 3
+            decimal_places: 0
+            rollover: false
+    skip: false
+  update_interval: 1s
+  color_depth: 16
+  default_font: montserrat_14
+  full_refresh: false
+  draw_rounding: 2
+  log_level: WARN
+  byte_order: big_endian
+  page_wrap: true
+  transparency_key: \033[5m1024\033[6m
+  touchscreens: []
+  keypads: []
+  resume_on_input: true
+wifi:
+  on_connect:
+    then:
+    - lvgl.widget.show:
+      - id: lbl_wifi
+  on_disconnect:
+    then:
+    - lvgl.widget.hide:
+      - id: lbl_wifi
+  reboot_timeout: 0s
+  ap:
+    ssid: \033[5mWatering System\033[6m
+    ap_timeout: 1min
+  domain: .local
+  power_save_mode: LIGHT
+  fast_connect: false
+  passive_scan: false
+  enable_on_boot: true
+  networks:
+  - ssid: \033[5mCyMano\033[6m
+    password: \033[5m'@CyMano1234@'\033[6m
+    priority: 0.0
+  use_address: watering_system.local
+globals:
+- id: soil_sensor_1_dry
+  type: float
+  restore_value: true
+  initial_value: '3.3'
+- id: soil_sensor_1_wet
+  type: float
+  restore_value: true
+  initial_value: '0'
+- id: pump_1_last_run
+  type: uint32_t
+  restore_value: false
+  initial_value: '0'
+- id: pump_1_force_run
+  type: bool
+  restore_value: false
+  initial_value: 'false'
+- id: soil_sensor_2_dry
+  type: float
+  restore_value: true
+  initial_value: '3.3'
+- id: soil_sensor_2_wet
+  type: float
+  restore_value: true
+  initial_value: '0'
+- id: pump_2_last_run
+  type: uint32_t
+  restore_value: false
+  initial_value: '0'
+- id: pump_2_force_run
+  type: bool
+  restore_value: false
+  initial_value: 'false'
+- id: soil_sensor_3_dry
+  type: float
+  restore_value: true
+  initial_value: '3.3'
+- id: soil_sensor_3_wet
+  type: float
+  restore_value: true
+  initial_value: '0'
+- id: pump_3_last_run
+  type: uint32_t
+  restore_value: false
+  initial_value: '0'
+- id: pump_3_force_run
+  type: bool
+  restore_value: false
+  initial_value: 'false'
+button:
+- platform: template
+  id: soil_sensor_1_set_dry
+  name: Sensor 1 Dry
+  entity_category: config
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        id(soil_sensor_1_dry) = id(soil_sensor_1_raw).state;
+  disabled_by_default: false
+- platform: template
+  id: soil_sensor_1_set_wet
+  name: Sensor 1 Wet
+  entity_category: config
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        id(soil_sensor_1_wet) =  id(soil_sensor_1_raw).state;
+  disabled_by_default: false
+- platform: template
+  id: pump_1_run_button
+  name: Run Pump 1
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        auto frequency = id(pump_1_frequency).hour * 3600 + id(pump_1_frequency).minute * 60 + id(pump_1_frequency).second;
+        auto duration = id(pump_1_duration).state;
+        auto now = id(global_time).now().timestamp;
+        auto last_run = id(pump_1_last_run);
+        id(pump_1_last_run) = now - frequency;
+        id(pump_1_force_run) = true;
+  disabled_by_default: false
+- platform: template
+  id: soil_sensor_2_set_dry
+  name: Sensor 2 Dry
+  entity_category: config
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        id(soil_sensor_2_dry) = id(soil_sensor_2_raw).state;
+  disabled_by_default: false
+- platform: template
+  id: soil_sensor_2_set_wet
+  name: Sensor 2 Wet
+  entity_category: config
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        id(soil_sensor_2_wet) =  id(soil_sensor_2_raw).state;
+  disabled_by_default: false
+- platform: template
+  id: pump_2_run_button
+  name: Run Pump 2
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        auto frequency = id(pump_2_frequency).hour * 3600 + id(pump_2_frequency).minute * 60 + id(pump_2_frequency).second;
+        auto duration = id(pump_2_duration).state;
+        auto now = id(global_time).now().timestamp;
+        auto last_run = id(pump_2_last_run);
+        id(pump_2_last_run) = now - frequency;
+        id(pump_2_force_run) = true;
+  disabled_by_default: false
+- platform: template
+  id: soil_sensor_3_set_dry
+  name: Sensor 3 Dry
+  entity_category: config
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        id(soil_sensor_3_dry) = id(soil_sensor_3_raw).state;
+  disabled_by_default: false
+- platform: template
+  id: soil_sensor_3_set_wet
+  name: Sensor 3 Wet
+  entity_category: config
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        id(soil_sensor_3_wet) =  id(soil_sensor_3_raw).state;
+  disabled_by_default: false
+- platform: template
+  id: pump_3_run_button
+  name: Run Pump 3
+  on_press:
+  - then:
+    - lambda: !lambda |-
+        auto frequency = id(pump_3_frequency).hour * 3600 + id(pump_3_frequency).minute * 60 + id(pump_3_frequency).second;
+        auto duration = id(pump_3_duration).state;
+        auto now = id(global_time).now().timestamp;
+        auto last_run = id(pump_3_last_run);
+        id(pump_3_last_run) = now - frequency;
+        id(pump_3_force_run) = true;
+  disabled_by_default: false
+sensor:
+- platform: adc
+  id: soil_sensor_1_raw
+  device_class: voltage
+  pin:
+    number: 39
+    mode:
+      input: true
+      output: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  name: Soil Sensor 1 raw
+  update_interval: 1s
+  entity_category: diagnostic
+  state_class: measurement
+  attenuation: auto
+  on_value:
+  - then:
+    - sensor.template.publish:
+        id: soil_sensor_1
+        state: !lambda |-
+          return x;
+  disabled_by_default: false
+  force_update: false
+  unit_of_measurement: V
+  accuracy_decimals: 2
+  raw: false
+  samples: 1
+  sampling_mode: avg
+- platform: template
+  id: soil_sensor_1
+  device_class: moisture
+  name: Soil Sensor 1
+  update_interval: 4294967295
+  accuracy_decimals: 2
+  unit_of_measurement: '%'
+  state_class: measurement
+  filters:
+  - quantile:
+      window_size: 5
+      send_every: 5
+      send_first_at: 1
+      quantile: 0.9
+  - lambda: !lambda |-
+      if (id(soil_sensor_1_dry) == id(soil_sensor_1_wet)) {
+        return 0.0;
+      }
+      float in_min = id(soil_sensor_1_dry);
+      float in_max = id(soil_sensor_1_wet);
+      float out_min = 0.0;
+      float out_max = 100.0;
+      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  - clamp:
+      min_value: 0.0
+      max_value: 100.0
+      ignore_out_of_range: false
+  disabled_by_default: false
+  force_update: false
+- platform: adc
+  id: soil_sensor_2_raw
+  device_class: voltage
+  pin:
+    number: 34
+    mode:
+      input: true
+      output: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  name: Soil Sensor 2 raw
+  update_interval: 1s
+  entity_category: diagnostic
+  state_class: measurement
+  attenuation: auto
+  on_value:
+  - then:
+    - sensor.template.publish:
+        id: soil_sensor_2
+        state: !lambda |-
+          return x;
+  disabled_by_default: false
+  force_update: false
+  unit_of_measurement: V
+  accuracy_decimals: 2
+  raw: false
+  samples: 1
+  sampling_mode: avg
+- platform: template
+  id: soil_sensor_2
+  device_class: moisture
+  name: Soil Sensor 2
+  update_interval: 4294967295
+  accuracy_decimals: 2
+  unit_of_measurement: '%'
+  state_class: measurement
+  filters:
+  - quantile:
+      window_size: 5
+      send_every: 5
+      send_first_at: 1
+      quantile: 0.9
+  - lambda: !lambda |-
+      if (id(soil_sensor_2_dry) == id(soil_sensor_2_wet)) {
+        return 0.0;
+      }
+      float in_min = id(soil_sensor_2_dry);
+      float in_max = id(soil_sensor_2_wet);
+      float out_min = 0.0;
+      float out_max = 100.0;
+      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  - clamp:
+      min_value: 0.0
+      max_value: 100.0
+      ignore_out_of_range: false
+  disabled_by_default: false
+  force_update: false
+- platform: adc
+  id: soil_sensor_3_raw
+  device_class: voltage
+  pin:
+    number: 35
+    mode:
+      input: true
+      output: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  name: Soil Sensor 3 raw
+  update_interval: 1s
+  entity_category: diagnostic
+  state_class: measurement
+  attenuation: auto
+  on_value:
+  - then:
+    - sensor.template.publish:
+        id: soil_sensor_3
+        state: !lambda |-
+          return x;
+  disabled_by_default: false
+  force_update: false
+  unit_of_measurement: V
+  accuracy_decimals: 2
+  raw: false
+  samples: 1
+  sampling_mode: avg
+- platform: template
+  id: soil_sensor_3
+  device_class: moisture
+  name: Soil Sensor 3
+  update_interval: 4294967295
+  accuracy_decimals: 2
+  unit_of_measurement: '%'
+  state_class: measurement
+  filters:
+  - quantile:
+      window_size: 5
+      send_every: 5
+      send_first_at: 1
+      quantile: 0.9
+  - lambda: !lambda |-
+      if (id(soil_sensor_3_dry) == id(soil_sensor_3_wet)) {
+        return 0.0;
+      }
+      float in_min = id(soil_sensor_3_dry);
+      float in_max = id(soil_sensor_3_wet);
+      float out_min = 0.0;
+      float out_max = 100.0;
+      return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+  - clamp:
+      min_value: 0.0
+      max_value: 100.0
+      ignore_out_of_range: false
+  disabled_by_default: false
+  force_update: false
+- platform: bme280_i2c
+  id: bme280_sensor
+  address: 0x76
+  temperature:
+    id: bme280_temperature
+    name: Temperature
+    internal: true
+    disabled_by_default: false
+    force_update: false
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    device_class: temperature
+    state_class: measurement
+    oversampling: 16X
+  pressure:
+    id: bme280_pressure
+    name: Pressure
+    disabled_by_default: false
+    force_update: false
+    unit_of_measurement: hPa
+    accuracy_decimals: 1
+    device_class: pressure
+    state_class: measurement
+    oversampling: 16X
+  humidity:
+    id: bme280_humidity
+    name: Humidity
+    internal: true
+    disabled_by_default: false
+    force_update: false
+    unit_of_measurement: '%'
+    accuracy_decimals: 1
+    device_class: humidity
+    state_class: measurement
+    oversampling: 16X
+  update_interval: 5s
+  iir_filter: 'OFF'
+- platform: absolute_humidity
+  id: abs_humidity
+  name: Absolute Humidity
+  internal: true
+  temperature: bme280_temperature
+  humidity: bme280_humidity
+  disabled_by_default: false
+  force_update: false
+  unit_of_measurement: g/m³
+  icon: mdi:water
+  accuracy_decimals: 2
+  state_class: measurement
+  equation: WOBUS
+- platform: template
+  id: temperature
+  name: Temperature
+  update_interval: 5s
+  device_class: temperature
+  unit_of_measurement: °C
+  state_class: measurement
+  lambda: !lambda |-
+    return id(bme280_temperature).state - 6.0;
+  on_value:
+  - then:
+    - lvgl.label.update:
+        id:
+        - id: lbl_temperature
+        text:
+          format: '%.1f°C'
+          args:
+          - !lambda |-
+            x
+  disabled_by_default: false
+  force_update: false
+  accuracy_decimals: 1
+- platform: template
+  id: relative_humidity
+  name: Relative Humidity
+  update_interval: 15s
+  device_class: humidity
+  lambda: !lambda |-
+    return id(abs_humidity).state / (6.112 * expf((17.67 * id(temperature).state) / (id(temperature).state + 243.5)) * 2.1674);
+  on_value:
+  - then:
+    - lvgl.label.update:
+        id:
+        - id: lbl_humidity
+        text:
+          format: '%.1f%%'
+          args:
+          - !lambda |-
+            x
+  disabled_by_default: false
+  force_update: false
+  accuracy_decimals: 1
+- platform: adc
+  id: light_sensor
+  device_class: illuminance
+  pin:
+    number: 36
+    mode:
+      input: true
+      output: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  name: Light Sensor
+  update_interval: 1s
+  attenuation: auto
+  unit_of_measurement: '%'
+  filters:
+  - quantile:
+      window_size: 5
+      send_every: 5
+      send_first_at: 1
+      quantile: 0.9
+  - calibrate_linear:
+      method: exact
+      datapoints:
+      - from: 0.0
+        to: 0.0
+      - from: 3.3
+        to: 100.0
+  - clamp:
+      min_value: 0.0
+      max_value: 100.0
+      ignore_out_of_range: false
+  disabled_by_default: false
+  force_update: false
+  accuracy_decimals: 2
+  state_class: measurement
+  raw: false
+  samples: 1
+  sampling_mode: avg
+time:
+- platform: homeassistant
+  id: global_time
+  on_time_sync:
+  - then:
+    - globals.set:
+        id: pump_3_last_run
+        value: !lambda |-
+          return id(global_time).now().timestamp;
+    - globals.set:
+        id: pump_2_last_run
+        value: !lambda |-
+          return id(global_time).now().timestamp;
+    - globals.set:
+        id: pump_1_last_run
+        value: !lambda |-
+          return id(global_time).now().timestamp;
+  timezone: CET-1CEST,M3.5.0,M10.5.0/3
+  update_interval: 15min
+datetime:
+- platform: template
+  id: pump_1_frequency
+  name: Pump 1 Frequency
+  optimistic: true
+  initial_value:
+    hour: 1
+    minute: 0
+    second: 0
+  restore_value: true
+  entity_category: config
+  disabled_by_default: false
+  type: TIME
+  update_interval: 60s
+- platform: template
+  id: pump_1_next_run_time
+  internal: true
+  update_interval: 1s
+  set_action:
+    then:
+    - lambda: !lambda |-
+        return;
+  lambda: !lambda |-
+    if (!id(global_time).now().is_valid()) {
+      return {};
+    }
+    uint32_t now = id(global_time).now().timestamp;
+    uint32_t last_run = id(pump_1_last_run);
+    int frequency = id(pump_1_frequency).hour * 3600 + id(pump_1_frequency).minute * 60 + id(pump_1_frequency).second;
+    uint32_t next_run = last_run + frequency;
+    if (now >= next_run) {
+      int duration = id(pump_1_duration).state;
+      next_run = next_run + duration;
+    }
+    return ESPTime::from_epoch_utc(next_run - now);
+  on_value:
+  - then:
+    - if:
+        condition:
+          and:
+          - switch.is_on:
+              id: pump_1_enabled
+        then:
+        - lvgl.label.update:
+            id:
+            - id: lbl_pump_1_next
+            text:
+              time_format: '%T'
+              time: !lambda |-
+                return x;
+  disabled_by_default: false
+  type: TIME
+  optimistic: false
+  name: pump_1_next_run_time
+- platform: template
+  id: pump_2_frequency
+  name: Pump 2 Frequency
+  optimistic: true
+  initial_value:
+    hour: 1
+    minute: 0
+    second: 0
+  restore_value: true
+  entity_category: config
+  disabled_by_default: false
+  type: TIME
+  update_interval: 60s
+- platform: template
+  id: pump_2_next_run_time
+  internal: true
+  update_interval: 1s
+  set_action:
+    then:
+    - lambda: !lambda |-
+        return;
+  lambda: !lambda |-
+    if (!id(global_time).now().is_valid()) {
+      return {};
+    }
+    uint32_t now = id(global_time).now().timestamp;
+    uint32_t last_run = id(pump_2_last_run);
+    int frequency = id(pump_2_frequency).hour * 3600 + id(pump_2_frequency).minute * 60 + id(pump_2_frequency).second;
+    uint32_t next_run = last_run + frequency;
+    if (now >= next_run) {
+      int duration = id(pump_2_duration).state;
+      next_run = next_run + duration;
+    }
+    return ESPTime::from_epoch_utc(next_run - now);
+  on_value:
+  - then:
+    - if:
+        condition:
+          and:
+          - switch.is_on:
+              id: pump_2_enabled
+        then:
+        - lvgl.label.update:
+            id:
+            - id: lbl_pump_2_next
+            text:
+              time_format: '%T'
+              time: !lambda |-
+                return x;
+  disabled_by_default: false
+  type: TIME
+  optimistic: false
+  name: pump_2_next_run_time
+- platform: template
+  id: pump_3_frequency
+  name: Pump 3 Frequency
+  optimistic: true
+  initial_value:
+    hour: 1
+    minute: 0
+    second: 0
+  restore_value: true
+  entity_category: config
+  disabled_by_default: false
+  type: TIME
+  update_interval: 60s
+- platform: template
+  id: pump_3_next_run_time
+  internal: true
+  update_interval: 1s
+  set_action:
+    then:
+    - lambda: !lambda |-
+        return;
+  lambda: !lambda |-
+    if (!id(global_time).now().is_valid()) {
+      return {};
+    }
+    uint32_t now = id(global_time).now().timestamp;
+    uint32_t last_run = id(pump_3_last_run);
+    int frequency = id(pump_3_frequency).hour * 3600 + id(pump_3_frequency).minute * 60 + id(pump_3_frequency).second;
+    uint32_t next_run = last_run + frequency;
+    if (now >= next_run) {
+      int duration = id(pump_3_duration).state;
+      next_run = next_run + duration;
+    }
+    return ESPTime::from_epoch_utc(next_run - now);
+  on_value:
+  - then:
+    - if:
+        condition:
+          and:
+          - switch.is_on:
+              id: pump_3_enabled
+        then:
+        - lvgl.label.update:
+            id:
+            - id: lbl_pump_3_next
+            text:
+              time_format: '%T'
+              time: !lambda |-
+                return x;
+  disabled_by_default: false
+  type: TIME
+  optimistic: false
+  name: pump_3_next_run_time
+number:
+- platform: template
+  id: pump_1_power
+  name: Pump 1 Power
+  min_value: 0.0
+  max_value: 100.0
+  step: 0.5
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: power_factor
+  entity_category: config
+  disabled_by_default: false
+  mode: AUTO
+  update_interval: 60s
+- platform: template
+  id: pump_1_duration
+  name: Pump 1 Duration
+  min_value: 0.0
+  max_value: 3600.0
+  step: 5.0
+  unit_of_measurement: s
+  initial_value: 10.0
+  optimistic: true
+  restore_value: true
+  device_class: duration
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_1_min_temperture
+  name: Pump 1 Mininum Temperture
+  min_value: -20.0
+  max_value: 50.0
+  step: 1.0
+  unit_of_measurement: °C
+  initial_value: 10.0
+  optimistic: true
+  restore_value: true
+  device_class: temperature
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_1_min_light
+  name: Pump 1 Mininum Light
+  min_value: 0.0
+  max_value: 100.0
+  step: 1.0
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: illuminance
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_1_max_soil_moisture
+  name: Pump 1 Maximum Soil Moisture
+  min_value: 0.0
+  max_value: 100.0
+  step: 1.0
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: moisture
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_2_power
+  name: Pump 2 Power
+  min_value: 0.0
+  max_value: 100.0
+  step: 0.5
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: power_factor
+  entity_category: config
+  disabled_by_default: false
+  mode: AUTO
+  update_interval: 60s
+- platform: template
+  id: pump_2_duration
+  name: Pump 2 Duration
+  min_value: 0.0
+  max_value: 3600.0
+  step: 5.0
+  unit_of_measurement: s
+  initial_value: 10.0
+  optimistic: true
+  restore_value: true
+  device_class: duration
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_2_min_temperture
+  name: Pump 2 Mininum Temperture
+  min_value: -20.0
+  max_value: 50.0
+  step: 1.0
+  unit_of_measurement: °C
+  initial_value: 10.0
+  optimistic: true
+  restore_value: true
+  device_class: temperature
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_2_min_light
+  name: Pump 2 Mininum Light
+  min_value: 0.0
+  max_value: 100.0
+  step: 1.0
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: illuminance
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_2_max_soil_moisture
+  name: Pump 2 Maximum Soil Moisture
+  min_value: 0.0
+  max_value: 100.0
+  step: 1.0
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: moisture
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_3_power
+  name: Pump 3 Power
+  min_value: 0.0
+  max_value: 100.0
+  step: 0.5
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: power_factor
+  entity_category: config
+  disabled_by_default: false
+  mode: AUTO
+  update_interval: 60s
+- platform: template
+  id: pump_3_duration
+  name: Pump 3 Duration
+  min_value: 0.0
+  max_value: 3600.0
+  step: 5.0
+  unit_of_measurement: s
+  initial_value: 10.0
+  optimistic: true
+  restore_value: true
+  device_class: duration
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_3_min_temperture
+  name: Pump 3 Mininum Temperture
+  min_value: -20.0
+  max_value: 50.0
+  step: 1.0
+  unit_of_measurement: °C
+  initial_value: 10.0
+  optimistic: true
+  restore_value: true
+  device_class: temperature
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_3_min_light
+  name: Pump 3 Mininum Light
+  min_value: 0.0
+  max_value: 100.0
+  step: 1.0
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: illuminance
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+- platform: template
+  id: pump_3_max_soil_moisture
+  name: Pump 3 Maximum Soil Moisture
+  min_value: 0.0
+  max_value: 100.0
+  step: 1.0
+  unit_of_measurement: '%'
+  initial_value: 50.0
+  optimistic: true
+  restore_value: true
+  device_class: moisture
+  mode: BOX
+  entity_category: config
+  disabled_by_default: false
+  update_interval: 60s
+switch:
+- platform: output
+  id: pump_1_sw
+  output: pump_1_output
+  restore_mode: RESTORE_DEFAULT_OFF
+  internal: true
+  on_turn_on:
+  - then:
+    - output.set_level:
+        id: pump_1_output
+        level: !lambda |-
+          return id(pump_1_power).state / 100.0;
+    - lvgl.widget.show:
+      - id: spinner_pump_1
+  on_turn_off:
+  - then:
+    - lvgl.widget.hide:
+      - id: spinner_pump_1
+  disabled_by_default: false
+  name: pump_1_sw
+- platform: template
+  name: Pump 1
+  id: pump_1_enabled
+  optimistic: true
+  restore_mode: RESTORE_DEFAULT_OFF
+  on_turn_on:
+  - then:
+    - lvgl.widget.enable:
+      - id: lbl_pump_1
+      - id: img_pump_1_light
+      - id: img_pump_1_soil
+      - id: lbl_pump_1_next
+  on_turn_off:
+  - then:
+    - lvgl.widget.disable:
+      - id: lbl_pump_1
+      - id: img_pump_1_light
+      - id: img_pump_1_soil
+      - id: lbl_pump_1_next
+    - lvgl.label.update:
+        id:
+        - id: lbl_pump_1_next
+        text: 'off'
+  disabled_by_default: false
+  assumed_state: false
+- platform: output
+  id: pump_2_sw
+  output: pump_2_output
+  restore_mode: RESTORE_DEFAULT_OFF
+  internal: true
+  on_turn_on:
+  - then:
+    - output.set_level:
+        id: pump_2_output
+        level: !lambda |-
+          return id(pump_2_power).state / 100.0;
+    - lvgl.widget.show:
+      - id: spinner_pump_2
+  on_turn_off:
+  - then:
+    - lvgl.widget.hide:
+      - id: spinner_pump_2
+  disabled_by_default: false
+  name: pump_2_sw
+- platform: template
+  name: Pump 2
+  id: pump_2_enabled
+  optimistic: true
+  restore_mode: RESTORE_DEFAULT_OFF
+  on_turn_on:
+  - then:
+    - lvgl.widget.enable:
+      - id: lbl_pump_2
+      - id: img_pump_2_light
+      - id: img_pump_2_soil
+      - id: lbl_pump_2_next
+  on_turn_off:
+  - then:
+    - lvgl.widget.disable:
+      - id: lbl_pump_2
+      - id: img_pump_2_light
+      - id: img_pump_2_soil
+      - id: lbl_pump_2_next
+    - lvgl.label.update:
+        id:
+        - id: lbl_pump_2_next
+        text: 'off'
+  disabled_by_default: false
+  assumed_state: false
+- platform: output
+  id: pump_3_sw
+  output: pump_3_output
+  restore_mode: RESTORE_DEFAULT_OFF
+  internal: true
+  on_turn_on:
+  - then:
+    - output.set_level:
+        id: pump_3_output
+        level: !lambda |-
+          return id(pump_3_power).state / 100.0;
+    - lvgl.widget.show:
+      - id: spinner_pump_3
+  on_turn_off:
+  - then:
+    - lvgl.widget.hide:
+      - id: spinner_pump_3
+  disabled_by_default: false
+  name: pump_3_sw
+- platform: template
+  name: Pump 3
+  id: pump_3_enabled
+  optimistic: true
+  restore_mode: RESTORE_DEFAULT_OFF
+  on_turn_on:
+  - then:
+    - lvgl.widget.enable:
+      - id: lbl_pump_3
+      - id: img_pump_3_light
+      - id: img_pump_3_soil
+      - id: lbl_pump_3_next
+  on_turn_off:
+  - then:
+    - lvgl.widget.disable:
+      - id: lbl_pump_3
+      - id: img_pump_3_light
+      - id: img_pump_3_soil
+      - id: lbl_pump_3_next
+    - lvgl.label.update:
+        id:
+        - id: lbl_pump_3_next
+        text: 'off'
+  disabled_by_default: false
+  assumed_state: false
+logger:
+  level: DEBUG
+  baud_rate: 115200
+  tx_buffer_size: 512
+  deassert_rts_dtr: false
+  hardware_uart: UART0
+  logs: {}
+api:
+  reboot_timeout: 0s
+  port: 6053
+  password: \033[5m''\033[6m
+captive_portal: {}
+http_request:
+  verify_ssl: false
+  useragent: ESPHome/2025.2.2 (https://esphome.io)
+  follow_redirects: true
+  redirect_limit: 3
+  timeout: 4500ms
+ota:
+- platform: http_request
+update:
+- platform: http_request
+  name: Firmware Update
+  source: http://example.com/manifest.json
+  disabled_by_default: false
+  entity_category: config
+  update_interval: 6h
+i2c:
+- sda: 21
+  scl: 22
+  scan: true
+  frequency: 50000.0
+spi:
+- clk_pin:
+    number: 18
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  mosi_pin:
+    number: 23
+    mode:
+      output: true
+      input: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  miso_pin:
+    number: 19
+    mode:
+      input: true
+      output: false
+      open_drain: false
+      pullup: false
+      pulldown: false
+    inverted: false
+    ignore_pin_validation_error: false
+    ignore_strapping_warning: false
+    drive_strength: 20.0
+  interface: any
+  type: single
+  interface_index: 0
+

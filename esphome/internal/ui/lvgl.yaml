@@ -44,6 +44,36 @@ image:
     transparency: alpha_channel
 
 font:
+  - id: montserrat_24_mdi
+    file: "fonts/Montserrat-Regular.ttf"
+    size: 24
+    bpp: 4
+    extras:
+      - file: "fonts/materialdesignicons-webfont.ttf"
+        glyphs: [
+          "\U000F0594", # clear-night
+          "\U000F0590", # cloudy
+          "\U000F0F2F", # exceptional
+          "\U000F0591", # fog
+          "\U000F0592", # hail
+          "\U000F0593", # lightning
+          "\U000F067E", # lightning-rainy
+          "\U000F0595", # partlycloudy
+          "\U000F0596", # pouring
+          "\U000F0597", # rainy
+          "\U000F0598", # snowy
+          "\U000F067F", # snowy-rainy
+          "\U000F0599", # sunny
+          "\U000F059D", # windy
+          "\U000F059E", # windy-variant
+          "\U000F14E4", # sunny-off
+          "\U000F050F", # thermometer
+          "\U000F058E", # water-percent
+          "\U000F1060", # sprinkler
+          "\U000F058C", # water
+          "\U000F058D", # water-off
+          ]
+
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons_42
     size: 42
@@ -270,7 +300,16 @@ lvgl:
       - !include lvgl_header.yaml
       - !include lvgl_footer.yaml
   pages:
-    - !include main_page.yaml
+    - id: main_page
+      styles: page
+      scrollbar_mode: "OFF"
+      layout:
+        type: FLEX
+        flex_flow: COLUMN
+        flex_align_main: SPACE_AROUND
+        flex_align_cross: CENTER
+        flex_align_track: CENTER
+
 
 wifi:
   on_connect:
