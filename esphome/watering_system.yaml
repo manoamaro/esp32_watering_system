@@ -1,5 +1,17 @@
+esphome:
+  name: wateringsystem
+  friendly_name: Watering System
+  min_version: 2025.4.1
+  includes:
+    - internal/functions.cpp
+  project:
+    name: "manoamaro.watering_system"
+    version: "1.0.0"
+preferences:
+  flash_write_interval: 10min
+
 substitutions:
-  update_sensors_interval: 1s
+  update_sensors_interval: 10s
 
 packages:
   lvgl: !include internal/ui/lvgl.yaml
@@ -22,11 +34,6 @@ packages:
       pin: GPIO14
       soil_sensor_pin: GPIO35
 
-esphome:
-  name: wateringsystem
-  friendly_name: Watering System
-  min_version: 2025.3.3
-
 esp32:
   board: esp32dev
   framework:
@@ -38,28 +45,29 @@ logger:
 
 # Enable Home Assistant API
 api:
+  reboot_timeout: 0s
 
 wifi:
-  ssid: "CyMano"  
-  password: "@CyMano1234@"
+  power_save_mode: none
+  output_power: 20dBm
   ap:
     ssid: "Watering System"
 
 captive_portal:
 
-http_request:
-  verify_ssl: false
+#http_request:
+#  verify_ssl: false
 
 ota:
-  - platform: http_request
+#  - platform: http_request
   - platform: esphome
 
 mdns:
 
-update:
-  - platform: http_request
-    name: Firmware Update
-    source: http://example.com/manifest.json
+#update:
+#  - platform: http_request
+#    name: Firmware Update
+#    source: http://example.com/manifest.json
 
 time:
   - platform: homeassistant
@@ -88,6 +96,13 @@ sensor:
         - sliding_window_moving_average:
             window_size: 5
             send_every: 5
+      on_value:
+        then:      
+          - lvgl.label.update:
+              id: lbl_temperature
+              text:
+                format: "%.1f°C"
+                args: [x]
     pressure:
       id: bme280_pressure
       name: "Pressure"
@@ -104,16 +119,13 @@ sensor:
         - sliding_window_moving_average:
             window_size: 5
             send_every: 5
-  - platform: absolute_humidity
-    id: abs_humidity
-    name: "Absolute Humidity"
-    temperature: bme280_temperature
-    humidity: bme280_humidity
-    filters:
-      - round: 2
-      - sliding_window_moving_average:
-          window_size: 5
-          send_every: 5
+      on_value:
+        then:      
+          - lvgl.label.update:
+              id: lbl_humidity
+              text:
+                format: "%.1f%%"
+                args: [x]
   - platform: adc
     id: light_sensor
     pin: GPIO36
@@ -134,4 +146,7 @@ sensor:
       - clamp:
           min_value: 0
           max_value: 100
-
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    update_interval: 10s
+    entity_category: "diagnostic"

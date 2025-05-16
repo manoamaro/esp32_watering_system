@@ -154,6 +154,7 @@ output:
     pin: GPIO27
     id: lcd_backlight_output
     frequency: 5000Hz
+    max_power: 50%
 
 light:
   - platform: monochromatic
@@ -164,7 +165,13 @@ light:
     restore_mode: ALWAYS_ON
     initial_state:
       state: ON
-      brightness: 0.65
+      brightness: 0.45
+
+wifi:
+  on_connect:
+    - lvgl.widget.show: lbl_wifi
+  on_disconnect:
+    - lvgl.widget.hide: lbl_wifi
 
 lvgl:
   displays:
@@ -294,7 +301,6 @@ lvgl:
     - id: pump_info_disabled
       bg_color: 0x000000
       bg_opa: 50%
-
   top_layer:
     widgets:
       - !include lvgl_header.yaml
@@ -306,13 +312,6 @@ lvgl:
       layout:
         type: FLEX
         flex_flow: COLUMN
-        flex_align_main: SPACE_AROUND
+        flex_align_main: SPACE_EVENLY
         flex_align_cross: CENTER
         flex_align_track: CENTER
-
-
-wifi:
-  on_connect:
-    - lvgl.widget.show: lbl_wifi
-  on_disconnect:
-    - lvgl.widget.hide: lbl_wifi

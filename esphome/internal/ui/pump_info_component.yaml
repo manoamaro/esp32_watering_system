@@ -5,14 +5,14 @@ obj:
   layout:
     type: FLEX
     flex_flow: ROW
-    flex_align_main: START
+    flex_align_main: SPACE_BETWEEN
     flex_align_cross: CENTER
     flex_align_track: CENTER
   click_focusable: false
   clickable: true
   scrollable: false
   focused:
-    border_color: 0x0000FF
+    border_color: 0x4024e2
     border_width: 2
   on_click:
     then:
@@ -26,10 +26,11 @@ obj:
         id: lbl_pump_${id}
         text_font: montserrat_24_mdi
         text: "\U000F1060 ${id}"
-        text_color: 0x0000FF
+        text_color: 0x24c6e2
+        width: 60
         pad_left: 5
         disabled:
-          text_color: 0xFF0000
+          text_color: 0xe24024
     - image:
         id: img_pump_${id}_light
         pad_left: 5
@@ -46,6 +47,7 @@ obj:
         id: lbl_pump_${id}_next
         pad_left: 5
         text: "00:00:00"
+        width: 80
     - spinner:
         id: spinner_pump_${id}
         spin_time: 2s

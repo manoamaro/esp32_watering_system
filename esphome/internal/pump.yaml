@@ -10,10 +10,6 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
-  - id: pump_${id}_force_run
-    type: bool
-    restore_value: no
-    initial_value: 'false'
 
 time:
   - id: !extend global_time
@@ -41,9 +37,6 @@ datetime:
       then:
         - lambda: "return;"
     lambda: |-
-      if (!id(global_time).now().is_valid() || id(pump_${id}_enabled).state == false) {
-        return {};
-      }
       uint32_t now = id(global_time).now().timestamp;
       uint32_t last_run = id(pump_${id}_last_run);
       int frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
@@ -140,8 +133,8 @@ output:
     max_power: 1.0
 
 switch:
-  - platform: output
-    id: pump_${id}_sw
+  - id: pump_${id}_sw
+    platform: output
     output: pump_${id}_output
     restore_mode: RESTORE_DEFAULT_OFF
     internal: true
@@ -152,9 +145,9 @@ switch:
       - lvgl.widget.show: spinner_pump_${id}
     on_turn_off:
       - lvgl.widget.hide: spinner_pump_${id}
-  - platform: template
+  - id: pump_${id}_enabled
     name: "Pump ${id}"
-    id: pump_${id}_enabled
+    platform: template
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
     on_turn_on:
@@ -174,8 +167,8 @@ switch:
           text: "off"
 
 button:
-  - platform: template
-    id: pump_${id}_run_button
+  - id: pump_${id}_run_button
+    platform: template
     name: "Run Pump ${id}"
     on_press:
       - script.execute: force_run_pump_${id}
@@ -207,7 +200,7 @@ binary_sensor:
     device_class: "moisture"
     publish_initial_state: true
     lambda: |-
-      return id(soil_sensor_${id}).state >= id(pump_${id}_max_soil_moisture).state;
+      return id(soil_sensor_${id}).state > id(pump_${id}_max_soil_moisture).state;
     on_state:
       then:
         - if:
@@ -235,9 +228,6 @@ binary_sensor:
     entity_category: "diagnostic"
     publish_initial_state: true
     lambda: |-
-      if (!id(global_time).now().is_valid()) {
-        return false;
-      }
       uint32_t now = id(global_time).now().timestamp;
       uint32_t last_run = id(pump_${id}_last_run);
       int frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
@@ -248,7 +238,6 @@ binary_sensor:
         return true;
       } else if (now > end_run) {
         id(pump_${id}_last_run) = now;
-        id(pump_${id}_force_run) = false;
         return false;
       } else {
         return false;
@@ -260,13 +249,10 @@ binary_sensor:
     condition:
       and:
         - switch.is_on: pump_${id}_enabled
-        - or:
-            - lambda: 'return id(pump_${id}_force_run);'
-            - and:
-                - binary_sensor.is_off: pump_${id}_is_soil_wet
-                - binary_sensor.is_on: pump_${id}_has_light
-                - binary_sensor.is_off: pump_${id}_is_cold
-                - binary_sensor.is_on: pump_${id}_is_time
+        - binary_sensor.is_off: pump_${id}_is_soil_wet
+        - binary_sensor.is_on: pump_${id}_has_light
+        - binary_sensor.is_off: pump_${id}_is_cold
+        - binary_sensor.is_on: pump_${id}_is_time
     publish_initial_state: true
     on_state:
       then:
@@ -282,13 +268,15 @@ script:
   - id: force_run_pump_${id}
     mode: restart
     then:
-      - lambda: |-
-          auto frequency = id(pump_${id}_frequency).hour * 3600 + id(pump_${id}_frequency).minute * 60 + id(pump_${id}_frequency).second;
-          auto duration = id(pump_${id}_duration).state;
-          auto now = id(global_time).now().timestamp;
-          auto last_run = id(pump_${id}_last_run);
-          id(pump_${id}_last_run) = now - frequency;
-          id(pump_${id}_force_run) = true;
+      - if:
+          condition:
+            switch.is_on: pump_${id}_sw
+          then:
+            - switch.turn_off: pump_${id}_sw
+          else:
+            - switch.turn_on: pump_${id}_sw
+            - delay: !lambda return id(pump_${id}_duration).state * 1000;
+            - switch.turn_off: pump_${id}_sw
 
 lvgl:
   pages:
