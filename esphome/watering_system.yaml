@@ -1,6 +1,7 @@
 esphome:
   name: wateringsystem
   friendly_name: Watering System
+  name_add_mac_suffix: true
   min_version: 2025.4.1
   includes:
     - internal/functions.cpp
@@ -8,31 +9,36 @@ esphome:
     name: "manoamaro.watering_system"
     version: "1.0.0"
 preferences:
-  flash_write_interval: 10min
+  flash_write_interval: 1min
 
 substitutions:
   update_sensors_interval: 10s
 
-packages:
-  lvgl: !include internal/ui/lvgl.yaml
-  pump0: !include
-    file: internal/pump.yaml
-    vars:
-      id: 1
-      pin: GPIO12
-      soil_sensor_pin: GPIO39
-  pump1: !include
-    file: internal/pump.yaml
-    vars:
-      id: 2
-      pin: GPIO4
-      soil_sensor_pin: GPIO34
-  pump2: !include
-    file: internal/pump.yaml
-    vars:
-      id: 3
-      pin: GPIO14
-      soil_sensor_pin: GPIO35
+external_components:
+  - source:
+      type: local
+      path: components
+
+# packages:
+  # lvgl: !include internal/ui/lvgl.yaml
+  # pump0: !include
+  #   file: internal/pump.yaml
+  #   vars:
+  #     id: 1
+  #     pin: GPIO12
+  #     soil_sensor_pin: GPIO39
+  # pump1: !include
+  #   file: internal/pump.yaml
+  #   vars:
+  #     id: 2
+  #     pin: GPIO4
+  #     soil_sensor_pin: GPIO34
+  # pump2: !include
+  #   file: internal/pump.yaml
+  #   vars:
+  #     id: 3
+  #     pin: GPIO14
+  #     soil_sensor_pin: GPIO35
 
 esp32:
   board: esp32dev
@@ -95,14 +101,14 @@ sensor:
         - round: 2
         - sliding_window_moving_average:
             window_size: 5
-            send_every: 5
-      on_value:
-        then:      
-          - lvgl.label.update:
-              id: lbl_temperature
-              text:
-                format: "%.1f°C"
-                args: [x]
+            send_every: 1
+      # on_value:
+      #   then:      
+      #     - lvgl.label.update:
+      #         id: lbl_temperature
+      #         text:
+      #           format: "%.1f°C"
+      #           args: [x]
     pressure:
       id: bme280_pressure
       name: "Pressure"
@@ -110,7 +116,7 @@ sensor:
         - round: 2
         - sliding_window_moving_average:
             window_size: 5
-            send_every: 5
+            send_every: 1
     humidity:
       id: bme280_humidity
       name: "Humidity"
@@ -118,14 +124,14 @@ sensor:
         - round: 2
         - sliding_window_moving_average:
             window_size: 5
-            send_every: 5
-      on_value:
-        then:      
-          - lvgl.label.update:
-              id: lbl_humidity
-              text:
-                format: "%.1f%%"
-                args: [x]
+            send_every: 1
+      # on_value:
+      #   then:      
+      #     - lvgl.label.update:
+      #         id: lbl_humidity
+      #         text:
+      #           format: "%.1f%%"
+      #           args: [x]
   - platform: adc
     id: light_sensor
     pin: GPIO36
@@ -150,3 +156,27 @@ sensor:
     name: "WiFi Signal Sensor"
     update_interval: 10s
     entity_category: "diagnostic"
+  - platform: adc_soil_sensor
+    id: soil_sensor_1
+    sensor_id: GPIO39
+
+
+output:
+  - platform: ledc
+    id: pump_1_output
+    pin: GPIO12
+    frequency: 5000Hz
+    min_power: 0.0
+    max_power: 1.0
+
+pump:
+  - id: pump_1
+    pump_output: pump_1_output
+    curr_soil_sensor_value: 10%
+    curr_light_sensor_value: 10%
+    curr_temperature_value: 20
+  - id: pump_2
+    pump_output: pump_1_output
+    curr_soil_sensor_value: 10%
+    curr_light_sensor_value: 10%
+    curr_temperature_value: 20
